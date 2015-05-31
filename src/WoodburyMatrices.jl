@@ -6,19 +6,19 @@ export Woodbury
 
 #### Woodbury matrices ####
 # This type provides support for the Woodbury matrix identity
-type Woodbury{T,AType,CType,CpType} <: AbstractMatrix{T}
+type Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractMatrix{T}
     A::AType
-    U::Matrix{T}
+    U::UType
     C::CType
     Cp::CpType
-    V::Matrix{T}
+    V::VType
     tmpN1::Vector{T}
     tmpN2::Vector{T}
     tmpk1::Vector{T}
     tmpk2::Vector{T}
 end
 
-function Woodbury{T}(A, U::Matrix{T}, C, V::Matrix{T})
+function Woodbury{T}(A, U::AbstractMatrix{T}, C::AbstractMatrix{T}, V::AbstractMatrix{T})
     N = size(A, 1)
     k = size(U, 2)
     if size(A, 2) != N || size(U, 1) != N || size(V, 1) != k || size(V, 2) != N
@@ -36,7 +36,7 @@ function Woodbury{T}(A, U::Matrix{T}, C, V::Matrix{T})
     tmpk1 = Array(T, k)
     tmpk2 = Array(T, k)
     # don't copy A, it could be huge
-    Woodbury{T,typeof(A),typeof(C),typeof(Cp)}(A, copy(U), copy(C), Cp, copy(V), tmpN1, tmpN2, tmpk1, tmpk2)
+    Woodbury{T,typeof(A),typeof(U),typeof(V),typeof(C),typeof(Cp)}(A, copy(U), copy(C), Cp, copy(V), tmpN1, tmpN2, tmpk1, tmpk2)
 end
 
 Woodbury{T}(A, U::Vector{T}, C, V::Matrix{T}) = Woodbury(A, reshape(U, length(U), 1), C, V)

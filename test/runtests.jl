@@ -55,3 +55,20 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
         @test_approx_eq iWv iFv
     end
 end
+
+# Sparse U and V
+n = 5
+d = 1 .+ rand(n)
+dl = -rand(n-1)
+du = -rand(n-1)
+T = Tridiagonal(dl, d, du)
+U = sprandn(n,2,0.2)
+V = sprandn(2,n,0.2)
+C = randn(2,2)
+W = Woodbury(T, U, C, V)
+F = full(W)
+
+v = randn(n)
+ε = eps()
+iFv = F\v
+@test norm(W\v - iFv)/norm(iFv) <= n*cond(F)*ε
