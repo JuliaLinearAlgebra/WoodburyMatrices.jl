@@ -1,5 +1,9 @@
 module WoodburyMatrices
 
+if VERSION < v"0.4.0-dev"
+    using Docile
+end
+
 import Base: A_ldiv_B!, convert, copy, det, full, show, similar, size
 
 export Woodbury
