@@ -5,7 +5,10 @@ import Base: A_ldiv_B!, convert, copy, det, full, show, similar, size
 export Woodbury
 
 #### Woodbury matrices ####
-# This type provides support for the Woodbury matrix identity
+@doc """
+`W = Woodbury(A, U, C, V)` creates a matrix `W` identical to `A + U*C*V` whose inverse will be calculated using
+the Woodbury matrix identity.
+""" ->
 type Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractMatrix{T}
     A::AType
     U::UType
@@ -18,15 +21,15 @@ type Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractMatrix{T}
     tmpk2::Vector{T}
 end
 
-function Woodbury{T}(A, U::AbstractMatrix{T}, C::AbstractMatrix{T}, V::AbstractMatrix{T})
+function Woodbury{T}(A, U::AbstractMatrix{T}, C, V::AbstractMatrix{T})
     N = size(A, 1)
     k = size(U, 2)
     if size(A, 2) != N || size(U, 1) != N || size(V, 1) != k || size(V, 2) != N
-        throw(DimensionMismatch())
+        throw(DimensionMismatch("Sizes of U ($(size(U))) and/or V ($(size(V))) are inconsistent with A ($(size(A)))"))
     end
     if k > 1
         if size(C, 1) != k || size(C, 2) != k
-            throw(DimensionMismatch())
+            throw(DimensionMismatch("C should be $(k)x$(k)"))
         end
     end
     Cp = inv(inv(C) + V*(A\U))

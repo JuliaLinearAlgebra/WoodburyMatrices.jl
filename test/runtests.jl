@@ -72,3 +72,27 @@ v = randn(n)
 ε = eps()
 iFv = F\v
 @test norm(W\v - iFv)/norm(iFv) <= n*cond(F)*ε
+
+# Display
+iob = IOBuffer()
+show(iob, W)
+
+# Vector-valued U and scalar-valued C
+U = rand(n)
+C = 2.3
+V = rand(1,n)
+W = Woodbury(T, U, C, V)
+F = full(W)
+
+v = randn(n)
+ε = eps()
+iFv = F\v
+@test norm(W\v - iFv)/norm(iFv) <= n*cond(F)*ε
+
+show(iob, W)
+
+Wc = copy(W)
+
+# Mismatched sizes
+@test_throws DimensionMismatch Woodbury(rand(5,5),rand(5,2),rand(2,3),rand(3,5))
+@test_throws DimensionMismatch Woodbury(rand(5,5),rand(5,2),rand(3,3),rand(2,5))
