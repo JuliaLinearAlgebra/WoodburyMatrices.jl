@@ -20,3 +20,5 @@ There are only a few things you can do with a Woodbury matrix:
 - `full(W)` converts to its dense representation
 - `W\b` solves the equation `W*x = b` for `x`. Note that the Woodbury matrix identity is notorious for floating-point roundoff errors, so be prepared for a certain amount of inaccuracy in the result.
 - `det(W)` computes the determinant of `W`.
+
+It's worth emphasizing that `A` can be supplied as a factorization, which makes `W\b` and `det(W)` more efficient.
