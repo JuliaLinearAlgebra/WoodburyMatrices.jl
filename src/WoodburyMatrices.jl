@@ -1,3 +1,5 @@
+isdefined(Base, :__precompile__) && __precompile__()
+
 module WoodburyMatrices
 
 if VERSION < v"0.4.0-dev"
