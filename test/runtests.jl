@@ -96,3 +96,19 @@ Wc = copy(W)
 # Mismatched sizes
 @test_throws DimensionMismatch Woodbury(rand(5,5),rand(5,2),rand(2,3),rand(3,5))
 @test_throws DimensionMismatch Woodbury(rand(5,5),rand(5,2),rand(3,3),rand(2,5))
+
+# spec builder
+n = 10
+num_nz = 3
+for i in 1:5  # repeat 5 times
+    args = [(rand(1:n), rand(1:n), rand()) for j in 1:num_nz]
+    r, v, c = WoodburyMatrices.sparse_factors(Float64, n, args...)
+    out = r*v*c
+
+    by_hand = zeros(n, n)
+    for (i, j, v) in args
+        by_hand[i, j] = v
+    end
+
+    @test maxabs(out - by_hand) == 0.0
+end
