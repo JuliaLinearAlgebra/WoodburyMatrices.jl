@@ -5,6 +5,7 @@ module WoodburyMatrices
 if VERSION < v"0.4.0-dev"
     using Docile
 end
+using Compat
 
 import Base: *, \, A_ldiv_B!, convert, copy, det, full, show, similar, size
 
@@ -128,7 +129,7 @@ julia> r*c*v - Diagonal([2.0, 3.0, 4.0])
 ```
 
 """
-function sparse_factors{T}(::Type{T}, n::Int, args::Tuple{Int, Int, Any}...)
+function sparse_factors{T}(::Type{T}, n::Int, args::@compat(Tuple{Int, Int, Any})...)
     m = length(args)
     rows = spzeros(T, n, m)
     cols = spzeros(T, m, n)
