@@ -133,17 +133,15 @@ function sparse_factors{T}(::Type{T}, n::Int, args::@compat(Tuple{Int, Int, Any}
     m = length(args)
     rows = spzeros(T, n, m)
     cols = spzeros(T, m, n)
-    val_diag = zeros(m)
+    vals = zeros(T, m, m)
 
     ix = 1
     for (i, (row, col, val)) in enumerate(args)
         rows[row, ix] = 1
         cols[ix, col] = 1
-        val_diag[ix] = val
+        vals[ix, ix] = val
         ix += 1
     end
-
-    vals = spdiagm(val_diag)
 
     rows, vals, cols
 end
