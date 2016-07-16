@@ -112,3 +112,5 @@ for i in 1:5  # repeat 5 times
 
     @test maxabs(out - by_hand) == 0.0
 end
+
+include("runtests_sym.jl")
