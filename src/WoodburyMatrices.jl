@@ -7,9 +7,11 @@ if VERSION < v"0.4.0-dev"
 end
 using Compat
 
+include("SymWoodburyMatrices.jl")
+
 import Base: *, \, A_ldiv_B!, convert, copy, det, full, show, similar, size
 
-export Woodbury
+export Woodbury, SymWoodbury, liftFactor
 
 #### Woodbury matrices ####
 @doc """
