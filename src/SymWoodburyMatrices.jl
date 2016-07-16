@@ -1,6 +1,6 @@
-import Base:+,*,-,\,^,sparse,full
+import Base:+,*,-,\,^,sparse,full,copy
 
-VectorTypes = Union{AbstractMatrix, Vector, SubArray}
+VectorTypes = Union{AbstractMatrix, Vector, SubArray, Diagonal}
 
 using Base.LinAlg.BLAS:gemm!,gemm
 
@@ -55,9 +55,6 @@ Get the factors (X,Z) in W + XZXᵀ where W + XZXᵀ = inv( A + BDBᵀ )
 """
 function partialInv(O::SymWoodbury)
 
-  if (size(O.B,2) == 0)
-    return (0,0)
-  end
   X = (O.A)\O.B;
   invD = -1*inv(O.D);
   Z = inv(invD - O.B'*X);
@@ -108,21 +105,18 @@ end
 
 Base.Ac_mul_B(O1::SymWoodbury, x::VectorTypes) = O1*x
 
-PTypes = Union{AbstractMatrix}
 
 +(O::SymWoodbury, M::SymWoodbury)    = SymWoodbury(O.A + M.A, [O.B M.B],
                                                    cat([1,2],O.D,M.D) );
 *(α::Real, O::SymWoodbury)           = SymWoodbury(α*O.A, O.B, α*O.D);
 *(O::SymWoodbury, α::Real)           = SymWoodbury(α*O.A, O.B, α*O.D);
-+(α::Real, O::SymWoodbury)           = α == 0 ?
-                                       SymWoodbury(O.A, O.B, O.D) :
-                                       SymWoodbury(O.A + α, O.B, O.D);
 +(M::AbstractMatrix, O::SymWoodbury) = SymWoodbury(O.A + M, O.B, O.D);
-+(O::SymWoodbury, M::PTypes)         = SymWoodbury(O.A + M, O.B, O.D);
++(O::SymWoodbury, M::AbstractMatrix) = SymWoodbury(O.A + M, O.B, O.D);
 Base.size(M::SymWoodbury)            = size(M.A);
 Base.size(M::SymWoodbury, i)         = (i == 1 || i == 2) ? size(M)[1] : 1
 
 Base.full{T}(O::SymWoodbury{T})      = full(O.A) + O.B*O.D*O.B'
+Base.copy{T}(O::SymWoodbury{T})      = SymWoodbury(copy(O.A), copy(O.B), copy(O.D))
 
 function square(O::SymWoodbury)
   A = O.A^2
@@ -145,7 +139,7 @@ function *(O1::SymWoodbury, O2::SymWoodbury)
     if O1.A == O2.A && O1.B == O2.B && O1.D == O2.D
       return square(O1)
     else
-      return Woodbury(O1*(O2.A), O1*(O2.B), O2.D, O2.B)
+      throw(DomainError())
     end
   end
 end

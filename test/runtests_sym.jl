@@ -12,11 +12,11 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
 
     if elty == Int
         v = rand(1:100, n)
-        a = rand(1:100, n, 2)
+        a = rand(1:100, n)
         B = rand(1:100, 2, n)
         D = rand(1:100, 2, 2)
     else
-        v = convert(Vector{elty}, a)
+        v = convert(Vector{elty}, v)
         a = convert(Vector{elty}, a)
         B = convert(Matrix{elty}, B)
         D = convert(Matrix{elty}, D)
@@ -35,19 +35,27 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     @test_approx_eq (W*W)*v full(W)*(full(W)*v)
     @test_approx_eq (W*W')*v full(W)*(full(W)*v)
     @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
+    @test_approx_eq sparse(W) full(W)
+    @test W === W'
 
     v = rand(n, 1)
 
+    R = rand(n,n)
     @test_approx_eq (2*W)*v 2*(W*v)
+    @test_approx_eq (W*2)*v 2*(W*v)
     @test_approx_eq (W'W)*v full(W)*(full(W)*v)
     @test_approx_eq (W*W)*v full(W)*(full(W)*v)
     @test_approx_eq (W*W')*v full(W)*(full(W)*v)
     @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
+    @test_approx_eq full(WoodburyMatrices.conjm(W, R)) R*full(W)*R'
+    @test_approx_eq full((copy(W)'W)*v) full(W)*(full(W)*v)
 
     if elty != Int
         @test_approx_eq inv(W)*v inv(full(W))*v
         @test_approx_eq W\v inv(full(W))*v        
         @test_approx_eq liftFactor(W)(v) inv(W)*v
+        @test_approx_eq WoodburyMatrices.partialInv(W)[1] inv(W).B
+        @test_approx_eq WoodburyMatrices.partialInv(W)[2] inv(W).D
     end
 
 end
@@ -57,28 +65,29 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
 
     elty = Float64
 
-    a = rand(n); B = rand(n,2); D = rand(2,2); v = rand(n)
+    a1 = rand(n); B1 = rand(n,2); D1 = rand(2,2); v = rand(n)
+    a2 = rand(n); B2 = rand(n,2); D2 = rand(2,2); 
 
     if elty == Int
         v = rand(1:100, n)
         
-        a1 = rand(1:100, n, 2)
+        a1 = rand(1:100, n)
         B1 = rand(1:100, 2, n)
         D1 = rand(1:100, 2, 2)
 
-        a2 = rand(1:100, n, 2)
+        a2 = rand(1:100, n)
         B2 = rand(1:100, 2, n)
         D2 = rand(1:100, 2, 2)
     else
-        v = convert(Vector{elty}, a)
+        v = convert(Vector{elty}, v)
 
-        a1 = convert(Vector{elty}, a)
-        B1 = convert(Matrix{elty}, B)
-        D1 = convert(Matrix{elty}, D)
+        a1 = convert(Vector{elty}, a1)
+        B1 = convert(Matrix{elty}, B1)
+        D1 = convert(Matrix{elty}, D1)
 
-        a2 = convert(Vector{elty}, a)
-        B2 = convert(Matrix{elty}, B)
-        D2 = convert(Matrix{elty}, D)
+        a2 = convert(Vector{elty}, a2)
+        B2 = convert(Matrix{elty}, B2)
+        D2 = convert(Matrix{elty}, D2)
     end
 
     ε = eps(abs2(float(one(elty))))
@@ -92,7 +101,8 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
 
     @test_approx_eq (W1 + W2)*v (full(W1) + full(W2))*v
     @test_approx_eq (full(W1) + W2)*v (full(W1) + full(W2))*v
-    @test_approx_eq (W1 + full(W2))*v (full(W1) + full(W2))*v
+    @test_approx_eq (W1 + 2*Diagonal(a1))*v (full(W1) + full(2*Diagonal(a1)))*v
+    @test_throws DomainError W1*W2
 
 end
 
@@ -122,6 +132,6 @@ V = randn(n,1)
 @test_approx_eq (W*W)*V full(W)*(full(W)*V)
 @test_approx_eq (W*W')*V full(W)*(full(W)*V)
 
-# # Mismatched sizes
-# @test_throws DimensionMismatch Woodbury(rand(5,5),rand(5,2),rand(2,3),rand(3,5))
-# @test_throws DimensionMismatch Woodbury(rand(5,5),rand(5,2),rand(3,3),rand(2,5))
+# Mismatched sizes
+@test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(5,2),rand(2,3))
+@test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(5,2),rand(3,3))
