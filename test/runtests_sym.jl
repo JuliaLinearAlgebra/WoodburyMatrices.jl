@@ -23,7 +23,7 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     end
 
     ε = eps(abs2(float(one(elty))))
-    A = Diagonal(a)
+    A = diagm(a)
     
     # Woodbury
     W = SymWoodbury(A, B, D)
@@ -93,22 +93,22 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     ε = eps(abs2(float(one(elty))))
     
     # Woodbury
-    A1 = Diagonal(a1)
-    A2 = Diagonal(a2)
+    A1 = diagm(a1)
+    A2 = diagm(a2)
 
     W1 = SymWoodbury(A1, B1, D1)
     W2 = SymWoodbury(A2, B2, D2)
 
     @test_approx_eq (W1 + W2)*v (full(W1) + full(W2))*v
     @test_approx_eq (full(W1) + W2)*v (full(W1) + full(W2))*v
-    @test_approx_eq (W1 + 2*Diagonal(a1))*v (full(W1) + full(2*Diagonal(a1)))*v
+    @test_approx_eq (W1 + 2*diagm(a1))*v (full(W1) + full(2*diagm(a1)))*v
     @test_throws DomainError W1*W2
 
 end
 
 # Sparse U and D
 
-A = Diagonal(rand(n))
+A = diagm(rand(n))
 B = sprandn(n,2,1.)
 D = sprandn(2,2,1.)
 W = SymWoodbury(A, B, D)
