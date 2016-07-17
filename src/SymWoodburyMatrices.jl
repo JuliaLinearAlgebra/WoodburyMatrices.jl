@@ -154,3 +154,5 @@ Base.sparse(O::SymWoodbury) = sparse(full(O))
 # returns a pointer to the original matrix, this is consistent with the
 # behavior of Symmetric in Base.
 Base.ctranspose(O::SymWoodbury) = O
+
+Base.det(W::SymWoodbury) = det(convert(Woodbury, W))

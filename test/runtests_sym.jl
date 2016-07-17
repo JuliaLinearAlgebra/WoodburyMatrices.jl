@@ -66,6 +66,7 @@ for elty in (Float32, Float64, Complex64, Complex128, Int), AMat in (diagm,)
         @test_approx_eq liftFactor(W)(v) inv(W)*v
         @test_approx_eq WoodburyMatrices.partialInv(W)[1] inv(W).B
         @test_approx_eq WoodburyMatrices.partialInv(W)[2] inv(W).D
+        @test_approx_eq det(W) det(full(W))
     end
 
 end
