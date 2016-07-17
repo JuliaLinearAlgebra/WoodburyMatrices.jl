@@ -38,6 +38,7 @@ for elty in (Float32, Float64, Complex64, Complex128, Int), AMat in (diagm,)
     @test_approx_eq sparse(W) full(W)
     @test W === W'
     @test_approx_eq W*eye(n) full(W)
+    @test_approx_eq W'*eye(n) full(W)
 
     Z = randn(n,n)
     @test_approx_eq full(W*Z) full(W)*Z
