@@ -7,8 +7,6 @@ if VERSION < v"0.4.0-dev"
 end
 using Compat
 
-include("SymWoodburyMatrices.jl")
-
 import Base: *, \, A_ldiv_B!, convert, copy, det, full, show, similar, size
 
 export Woodbury, SymWoodbury, liftFactor
@@ -148,5 +146,6 @@ function sparse_factors{T}(::Type{T}, n::Int, args::@compat(Tuple{Int, Int, Any}
     rows, vals, cols
 end
 
+include("SymWoodburyMatrices.jl")
 
 end

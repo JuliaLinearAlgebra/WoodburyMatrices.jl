@@ -1,18 +1,14 @@
 import Base:+,*,-,\,^,sparse,full,copy
 
-VectorTypes = Union{AbstractMatrix, Vector, SubArray, Diagonal}
-
 using Base.LinAlg.BLAS:gemm!,gemm
 
 """
 Represents a matrix of the form A + BDBᵀ.
 """
 type SymWoodbury{T,AType, BType, DType} <: AbstractMatrix{T}
-
   A::AType; 
   B::BType; 
   D::DType;
-
 end
 
 """
@@ -29,17 +25,17 @@ function SymWoodbury{T}(A, B::AbstractMatrix{T}, D)
     SymWoodbury{T, typeof(A),typeof(B),typeof(D)}(A,B,D)
 end
 
-function calc_inv(A, B, D)
+convert{W<:Woodbury}(::Type{W}, O::SymWoodbury) = Woodbury(O.A, O.B, O.D, O.B')
 
+function calc_inv(A, B, D)
   W = inv(A);
   X = W*B;
   invD = -inv(D);
   Z = inv(invD - B'*X);
   SymWoodbury(W,X,Z);
-
 end
 
-Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:Matrix}(O::SymWoodbury{T,AType,BType,DType}) = 
+Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:AbstractMatrix}(O::SymWoodbury{T,AType,BType,DType}) = 
   calc_inv(O.A, O.B, O.D)
 
 # D is typically small, so this is acceptable. 
@@ -54,15 +50,16 @@ Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:SparseMatrixCSC}(O::SymWoodbury{
 Get the factors (X,Z) in W + XZXᵀ where W + XZXᵀ = inv( A + BDBᵀ )
 """
 function partialInv(O::SymWoodbury)
-
   X = (O.A)\O.B;
   invD = -1*inv(O.D);
   Z = inv(invD - O.B'*X);
   return (X,Z);
-
 end
 
-function liftFactorVars(A,B,Di)
+function liftFactorVars(A,B,D)
+  A  = sparse(A)
+  B  = sparse(B)
+  Di = sparse(inv(D))
   n  = size(A,1)
   k  = size(B,2)
   M = [A    B   ;
@@ -71,40 +68,36 @@ function liftFactorVars(A,B,Di)
   return x -> (M\[x; zeros(k,1)])[1:n,:];
 end
 
+function liftFactorVars(A,B,D::SparseMatrixCSC)
+  liftFactorVars(A,B,full(D))
+end
+
 """
     liftFactor(A)
 
 More stable version of inv(A).  Returns a function which computs the inverse
 on evaluation, i.e. `liftFactor(A)(x)` is the same as `inv(A)*x`.
 """
-liftFactor{T<:Any,
-           AType<:Any, 
-           BType<:Any, 
-           DType<:Matrix}(O::SymWoodbury{T,AType,BType,DType}) = 
-           liftFactorVars(sparse(O.A), sparse(O.B), sparse(inv(O.D))); 
+liftFactor(O::SymWoodbury) = liftFactorVars(O.A,O.B,O.D)
 
-liftFactor{T<:Any,
-           AType<:Any, 
-           BType<:Any, 
-           DType<:SparseMatrixCSC}(O::SymWoodbury{T,AType,BType,DType}) = 
-           liftFactorVars(sparse(O.A), sparse(O.B), sparse(inv(full(O.D))));
-
-# Optimization - use specialized BLAS package 
-function *{T<:Any, AType<:Any, BType<:Matrix, DType<:Any}(O::SymWoodbury{T,AType,BType,DType}, 
-  x::Array{Float64,2})
+function *{T}(O::SymWoodbury{T}, x::Union{Matrix,Vector,SubArray}) 
   o = O.A*x;
-  w = O.D*gemm('T','N',O.B,x);
-  gemm!('N','N',1.,O.B,w,1., o)
+  plusBDBtx!(o, O.B, O.D, x)
   return o
 end
 
-function *{T<:Any, AType<:Any, BType<:Any, DType<:Any}(O::SymWoodbury{T,AType,BType,DType}, 
-  x::VectorTypes)
-  return O.A*x + O.B*(O.D*(O.B'x));
+function plusBDBtx!(o, B, D, x)
+	o[:] = o + B*(D*(B'x))
 end
 
-Base.Ac_mul_B(O1::SymWoodbury, x::VectorTypes) = O1*x
+# Optimization - use specialized BLAS package 
+function plusBDBtx!(o, B::Array{Float64,2}, D, x::Array{Float64,2})
+  w = D*gemm('T','N',B,x);
+  gemm!('N','N',1.,B,w,1., o)
+end
 
+Base.Ac_mul_B{T}(O1::SymWoodbury{T}, x::AbstractVector{T}) = O1*x
+Base.Ac_mul_B{T}(O1::SymWoodbury{T}, x::AbstractMatrix{T}) = O1*x
 
 +(O::SymWoodbury, M::SymWoodbury)    = SymWoodbury(O.A + M.A, [O.B M.B],
                                                    cat([1,2],O.D,M.D) );
@@ -131,6 +124,9 @@ The product of two SymWoodbury matrices will generally be a Woodbury Matrix,
 except when they are the same, i.e. the user writes A'A or A*A' or A*A.
 
 Z(A + B*D*Bᵀ) = ZA + ZB*D*Bᵀ
+
+This package will not support support left multiplication by a generic 
+matrix, to keep return types consistent.
 """
 function *(O1::SymWoodbury, O2::SymWoodbury)
   if (O1 === O2) 
@@ -139,7 +135,7 @@ function *(O1::SymWoodbury, O2::SymWoodbury)
     if O1.A == O2.A && O1.B == O2.B && O1.D == O2.D
       return square(O1)
     else
-      throw(DomainError())
+      throw(MethodError("The product of two nonidentical SymWoodbury matrices is not necessarily SymWoodbury."))
     end
   end
 end

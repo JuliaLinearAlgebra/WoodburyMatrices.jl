@@ -4,7 +4,7 @@ using WoodburyMatrices
 srand(123)
 n = 5
 
-for elty in (Float32, Float64, Complex64, Complex128, Int)
+for elty in (Float32, Float64, Complex64, Complex128, Int), AMat in (diagm,)
 
     elty = Float64
 
@@ -23,7 +23,7 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     end
 
     ε = eps(abs2(float(one(elty))))
-    A = diagm(a)
+    A = AMat(a)
     
     # Woodbury
     W = SymWoodbury(A, B, D)
@@ -37,6 +37,10 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
     @test_approx_eq sparse(W) full(W)
     @test W === W'
+    @test_approx_eq W*eye(n) full(W)
+
+    Z = randn(n,n)
+    @test_approx_eq full(W*Z) full(W)*Z
 
     v = rand(n, 1)
 
@@ -49,6 +53,11 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
     @test_approx_eq full(WoodburyMatrices.conjm(W, R)) R*full(W)*R'
     @test_approx_eq full((copy(W)'W)*v) full(W)*(full(W)*v)
+    @test_approx_eq full(W + A) full(W)+full(A)
+    @test_approx_eq full(A + W) full(W)+full(A)
+
+    W2 = convert(Woodbury, W)
+    @test_approx_eq full(W2) full(W)
 
     if elty != Int
         @test_approx_eq inv(W)*v inv(full(W))*v
@@ -102,7 +111,7 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     @test_approx_eq (W1 + W2)*v (full(W1) + full(W2))*v
     @test_approx_eq (full(W1) + W2)*v (full(W1) + full(W2))*v
     @test_approx_eq (W1 + 2*diagm(a1))*v (full(W1) + full(2*diagm(a1)))*v
-    @test_throws DomainError W1*W2
+    @test_throws MethodError W1*W2
 
 end
 
