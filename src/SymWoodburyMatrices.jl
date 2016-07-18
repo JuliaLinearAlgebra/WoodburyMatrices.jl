@@ -135,7 +135,7 @@ function *(O1::SymWoodbury, O2::SymWoodbury)
     if O1.A == O2.A && O1.B == O2.B && O1.D == O2.D
       return square(O1)
     else
-      throw(MethodError("The product of two nonidentical SymWoodbury matrices is not necessarily SymWoodbury."))
+      throw(MethodError("to multiply two non-identical SymWoodbury matrices, first convert to Woodbury."))
     end
   end
 end
@@ -153,6 +153,6 @@ Base.sparse(O::SymWoodbury) = sparse(full(O))
 
 # returns a pointer to the original matrix, this is consistent with the
 # behavior of Symmetric in Base.
-Base.ctranspose(O::SymWoodbury) = O
+Base.ctranspose(O::SymWoodbury) = O 
 
 Base.det(W::SymWoodbury) = det(convert(Woodbury, W))
