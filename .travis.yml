@@ -3,11 +3,10 @@ os:
   - linux
   - osx
 julia:
-  - 0.3
   - release
   - nightly
 notifications:
-  email: false
+  email: true
 # uncomment the following lines to override the default test script
 script:
  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
