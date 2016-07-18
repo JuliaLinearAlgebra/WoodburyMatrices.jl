@@ -135,7 +135,7 @@ function *(O1::SymWoodbury, O2::SymWoodbury)
     if O1.A == O2.A && O1.B == O2.B && O1.D == O2.D
       return square(O1)
     else
-      throw(MethodError("to multiply two non-identical SymWoodbury matrices, first convert to Woodbury."))
+      throw(MethodError("ERROR: To multiply two non-identical SymWoodbury matrices, first convert to Woodbury."))
     end
   end
 end
