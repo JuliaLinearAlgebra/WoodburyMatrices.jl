@@ -2,9 +2,6 @@ isdefined(Base, :__precompile__) && __precompile__()
 
 module WoodburyMatrices
 
-if VERSION < v"0.4.0-dev"
-    using Docile
-end
 using Compat
 
 import Base: *, \, A_ldiv_B!, convert, copy, det, full, show, similar, size
@@ -12,10 +9,10 @@ import Base: *, \, A_ldiv_B!, convert, copy, det, full, show, similar, size
 export Woodbury, SymWoodbury, liftFactor
 
 #### Woodbury matrices ####
-@doc """
+"""
 `W = Woodbury(A, U, C, V)` creates a matrix `W` identical to `A + U*C*V` whose inverse will be calculated using
 the Woodbury matrix identity.
-""" ->
+"""
 type Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractMatrix{T}
     A::AType
     U::UType
