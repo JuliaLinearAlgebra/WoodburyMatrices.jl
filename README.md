@@ -25,7 +25,7 @@ It's worth emphasizing that `A` can be supplied as a factorization, which makes 
 
 ### SymWoodbury Matrices
 ```julia
-using SymWoodburyMatrices
+using WoodburyMatrices
 W = SymWoodbury(A, B, D)
 ```
 creates a `SymWoodbury` matrix, a symmetric version of a Woodbury matrix representing `A + B*D*B'`. In addition to the features above, `SymWoodbury` also supports various operations which are closed under this type. They are
