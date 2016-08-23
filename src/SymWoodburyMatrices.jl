@@ -112,11 +112,13 @@ Base.full{T}(O::SymWoodbury{T})      = full(O.A) + O.B*O.D*O.B'
 Base.copy{T}(O::SymWoodbury{T})      = SymWoodbury(copy(O.A), copy(O.B), copy(O.D))
 
 function square(O::SymWoodbury)
-  A = O.A^2
-  D = O.D
-  B = O.B
-  Z = [(O.A*B + B) (O.A*B - B) B]
-  SymWoodbury(A, Z, full( cat([1,2],D/2,-D/2, D*B'*B*D) ) )
+  A  = O.A^2
+  AB = O.A*O.B
+  Z  = [(AB + O.B) (AB - O.B)]
+  R  = O.D*(O.B'*(O.B*O.D))/4
+  D  = [ O.D/2 + R  -R 
+        -R          -O.D/2 + R ]
+  SymWoodbury(A, Z, D)
 end
 
 """
