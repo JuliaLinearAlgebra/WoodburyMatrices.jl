@@ -1,6 +1,6 @@
 import Base:+,*,-,\,^,sparse,full,copy
 
-using Base.LinAlg.BLAS:gemm!,gemm
+using Base.LinAlg.BLAS:gemm!,gemm,axpy!
 
 """
 Represents a matrix of the form A + BDBᵀ.
@@ -25,15 +25,30 @@ function SymWoodbury{T}(A, B::AbstractMatrix{T}, D)
     SymWoodbury{T, typeof(A),typeof(B),typeof(D)}(A,B,D)
 end
 
+function SymWoodbury{T}(A, B::AbstractVector{T}, D::T)
+    n = size(A, 1)
+    k = 1
+    if size(A, 2) != n || length(B) != n 
+        throw(DimensionMismatch("Sizes of B ($(size(B))) and/or D ($(size(D))) are inconsistent with A ($(size(A)))"))
+    end
+    SymWoodbury{T,typeof(A),typeof(B),typeof(D)}(A,B,D)
+end
+
 convert{W<:Woodbury}(::Type{W}, O::SymWoodbury) = Woodbury(O.A, O.B, O.D, O.B')
+
+inv_invD_BtX(invD, B, X) = inv(invD - B'*X);
+inv_invD_BtX(invD, B::AbstractVector, X) = inv(invD - vecdot(B,X));
 
 function calc_inv(A, B, D)
   W = inv(A);
   X = W*B;
   invD = -inv(D);
-  Z = inv(invD - B'*X);
+  Z = inv_invD_BtX(invD, B, X);
   SymWoodbury(W,X,Z);
 end
+
+Base.inv{T<:Any, AType<:Any, BType<:AbstractVector, DType<:Real}(O::SymWoodbury{T,AType,BType,DType}) = 
+  calc_inv(O.A, O.B, O.D)
 
 Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:AbstractMatrix}(O::SymWoodbury{T,AType,BType,DType}) = 
   calc_inv(O.A, O.B, O.D)
@@ -52,7 +67,7 @@ Get the factors (X,Z) in W + XZXᵀ where W + XZXᵀ = inv( A + BDBᵀ )
 function partialInv(O::SymWoodbury)
   X = (O.A)\O.B;
   invD = -1*inv(O.D);
-  Z = inv(invD - O.B'*X);
+  Z = inv_invD_BtX(invD, O.B, X);
   return (X,Z);
 end
 
@@ -70,6 +85,11 @@ end
 
 function liftFactorVars(A,B,D::SparseMatrixCSC)
   liftFactorVars(A,B,full(D))
+end
+
+# This could be optimized to avoid the extra allocation of a single element matrix
+function liftFactorVars(A,B,D::Real)
+  liftFactorVars(A,B,ones(1,1)*D)
 end
 
 """
@@ -90,10 +110,22 @@ function plusBDBtx!(o, B, D, x)
 	o[:] = o + B*(D*(B'x))
 end
 
+plusBDBtx!(o, B::AbstractVector, D, x) = plusBDBtx!(o, reshape(B,size(B,1),1),D,x)
+
 # Optimization - use specialized BLAS package 
 function plusBDBtx!(o, B::Array{Float64,2}, D, x::Array{Float64,2})
   w = D*gemm('T','N',B,x);
   gemm!('N','N',1.,B,w,1., o)
+end
+
+# Minor optimization for the rank one case
+function plusBDBtx!(o, B::Array{Float64,1}, d::Real, x::Array{Float64,2})
+  if size(x,1) == 1
+    axpy!(dot(length(x),B,1,x,1)*d, B, o)
+  else
+    w = d*gemm('T', 'N' ,reshape(B, size(B,1), 1),x);
+    gemm!('N','N',1.,B,w,1., o)    
+  end
 end
 
 Base.Ac_mul_B{T}(O1::SymWoodbury{T}, x::AbstractVector{T}) = O1*x
@@ -112,12 +144,12 @@ Base.full{T}(O::SymWoodbury{T})      = full(O.A) + O.B*O.D*O.B'
 Base.copy{T}(O::SymWoodbury{T})      = SymWoodbury(copy(O.A), copy(O.B), copy(O.D))
 
 function square(O::SymWoodbury)
-  A  = O.A^2
-  AB = O.A*O.B
-  Z  = [(AB + O.B) (AB - O.B)]
-  R  = O.D*(O.B'*(O.B*O.D))/4
+  A  = O.A^2;
+  AB = O.A*O.B;
+  Z  = [(AB + O.B) (AB - O.B)];
+  R  = O.D*(O.B'*O.B)*O.D/4;
   D  = [ O.D/2 + R  -R 
-        -R          -O.D/2 + R ]
+        -R          -O.D/2 + R ];
   SymWoodbury(A, Z, D)
 end
 

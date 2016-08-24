@@ -26,47 +26,50 @@ for elty in (Float32, Float64, Complex64, Complex128, Int), AMat in (diagm,)
     A = AMat(a)
     
     # Woodbury
-    W = SymWoodbury(A, B, D)
-    F = full(W)
+    for W in (SymWoodbury(A, B, D), SymWoodbury(A, B[:,1][:], 2.))
 
-    @test_approx_eq (2*W)*v 2*(W*v)
-    @test_approx_eq W'*v W*v
-    @test_approx_eq (W'W)*v full(W)*(full(W)*v)
-    @test_approx_eq (W*W)*v full(W)*(full(W)*v)
-    @test_approx_eq (W*W')*v full(W)*(full(W)*v)
-    @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
-    @test_approx_eq sparse(W) full(W)
-    @test W === W'
-    @test_approx_eq W*eye(n) full(W)
-    @test_approx_eq W'*eye(n) full(W)
+        F = full(W)
 
-    Z = randn(n,n)
-    @test_approx_eq full(W*Z) full(W)*Z
+        @test_approx_eq (2*W)*v 2*(W*v)
+        @test_approx_eq W'*v W*v
+        @test_approx_eq (W'W)*v full(W)*(full(W)*v)
+        @test_approx_eq (W*W)*v full(W)*(full(W)*v)
+        @test_approx_eq (W*W')*v full(W)*(full(W)*v)
+        @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
+        @test_approx_eq sparse(W) full(W)
+        @test W === W'
+        @test_approx_eq W*eye(n) full(W)
+        @test_approx_eq W'*eye(n) full(W)
 
-    v = rand(n, 1)
+        Z = randn(n,n)
+        @test_approx_eq full(W*Z) full(W)*Z
 
-    R = rand(n,n)
-    @test_approx_eq (2*W)*v 2*(W*v)
-    @test_approx_eq (W*2)*v 2*(W*v)
-    @test_approx_eq (W'W)*v full(W)*(full(W)*v)
-    @test_approx_eq (W*W)*v full(W)*(full(W)*v)
-    @test_approx_eq (W*W')*v full(W)*(full(W)*v)
-    @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
-    @test_approx_eq full(WoodburyMatrices.conjm(W, R)) R*full(W)*R'
-    @test_approx_eq full((copy(W)'W)*v) full(W)*(full(W)*v)
-    @test_approx_eq full(W + A) full(W)+full(A)
-    @test_approx_eq full(A + W) full(W)+full(A)
+        v = rand(n, 1)
 
-    W2 = convert(Woodbury, W)
-    @test_approx_eq full(W2) full(W)
+        R = rand(n,n)
+        @test_approx_eq (2*W)*v 2*(W*v)
+        @test_approx_eq (W*2)*v 2*(W*v)
+        @test_approx_eq (W'W)*v full(W)*(full(W)*v)
+        @test_approx_eq (W*W)*v full(W)*(full(W)*v)
+        @test_approx_eq (W*W')*v full(W)*(full(W)*v)
+        @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
+        @test_approx_eq full(WoodburyMatrices.conjm(W, R)) R*full(W)*R'
+        @test_approx_eq full((copy(W)'W)*v) full(W)*(full(W)*v)
+        @test_approx_eq full(W + A) full(W)+full(A)
+        @test_approx_eq full(A + W) full(W)+full(A)
 
-    if elty != Int
-        @test_approx_eq inv(W)*v inv(full(W))*v
-        @test_approx_eq W\v inv(full(W))*v        
-        @test_approx_eq liftFactor(W)(v) inv(W)*v
-        @test_approx_eq WoodburyMatrices.partialInv(W)[1] inv(W).B
-        @test_approx_eq WoodburyMatrices.partialInv(W)[2] inv(W).D
-        @test_approx_eq det(W) det(full(W))
+        W2 = convert(Woodbury, W)
+        @test_approx_eq full(W2) full(W)
+
+        if elty != Int
+            @test_approx_eq inv(W)*v inv(full(W))*v
+            @test_approx_eq W\v inv(full(W))*v        
+            @test_approx_eq liftFactor(W)(v) inv(W)*v
+            @test_approx_eq WoodburyMatrices.partialInv(W)[1] inv(W).B
+            @test_approx_eq WoodburyMatrices.partialInv(W)[2] inv(W).D
+            @test_approx_eq det(W) det(full(W))
+        end
+
     end
 
 end
@@ -110,10 +113,15 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     W1 = SymWoodbury(A1, B1, D1)
     W2 = SymWoodbury(A2, B2, D2)
 
-    @test_approx_eq (W1 + W2)*v (full(W1) + full(W2))*v
-    @test_approx_eq (full(W1) + W2)*v (full(W1) + full(W2))*v
-    @test_approx_eq (W1 + 2*diagm(a1))*v (full(W1) + full(2*diagm(a1)))*v
-    @test_throws MethodError W1*W2
+    W1r = SymWoodbury(A1, B1[:,1][:], 2.)
+    W2r = SymWoodbury(A2, B2[:,1][:], 3.)
+
+    for (W1, W2) = ((W1,W2), (W1r, W2), (W1, W2r), (W1r,W2r))
+        @test_approx_eq (W1 + W2)*v (full(W1) + full(W2))*v
+        @test_approx_eq (full(W1) + W2)*v (full(W1) + full(W2))*v
+        @test_approx_eq (W1 + 2*diagm(a1))*v (full(W1) + full(2*diagm(a1)))*v
+        @test_throws MethodError W1*W2
+    end
 
 end
 
