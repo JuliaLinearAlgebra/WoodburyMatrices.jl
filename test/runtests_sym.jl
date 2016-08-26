@@ -1,5 +1,6 @@
 using Base.Test
 using WoodburyMatrices
+using Compat:view
 
 srand(123)
 n = 5
@@ -44,19 +45,22 @@ for elty in (Float32, Float64, Complex64, Complex128, Int), AMat in (diagm,)
         Z = randn(n,n)
         @test_approx_eq full(W*Z) full(W)*Z
 
-        v = rand(n, 1)
-
         R = rand(n,n)
-        @test_approx_eq (2*W)*v 2*(W*v)
-        @test_approx_eq (W*2)*v 2*(W*v)
-        @test_approx_eq (W'W)*v full(W)*(full(W)*v)
-        @test_approx_eq (W*W)*v full(W)*(full(W)*v)
-        @test_approx_eq (W*W')*v full(W)*(full(W)*v)
-        @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
-        @test_approx_eq full(WoodburyMatrices.conjm(W, R)) R*full(W)*R'
-        @test_approx_eq full((copy(W)'W)*v) full(W)*(full(W)*v)
-        @test_approx_eq full(W + A) full(W)+full(A)
-        @test_approx_eq full(A + W) full(W)+full(A)
+
+        for v = (rand(n, 1), view(rand(n,1), 1:n), view(rand(n,2),1:n,1:2))
+            @test_approx_eq (2*W)*v 2*(W*v)
+            @test_approx_eq (W*2)*v 2*(W*v)
+            @test_approx_eq (W'W)*v full(W)*(full(W)*v)
+            @test_approx_eq (W*W)*v full(W)*(full(W)*v)
+            @test_approx_eq (W*W')*v full(W)*(full(W)*v)
+            @test_approx_eq W[1:3,1:3]*v[1:3] full(W)[1:3,1:3]*v[1:3]
+            @test_approx_eq full(WoodburyMatrices.conjm(W, R)) R*full(W)*R'
+            @test_approx_eq full((copy(W)'W)*v) full(W)*(full(W)*v)
+            @test_approx_eq full(W + A) full(W)+full(A)
+            @test_approx_eq full(A + W) full(W)+full(A)
+        end
+
+        v = rand(n,1)
 
         W2 = convert(Woodbury, W)
         @test_approx_eq full(W2) full(W)
@@ -154,3 +158,4 @@ V = randn(n,1)
 # Mismatched sizes
 @test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(5,2),rand(2,3))
 @test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(5,2),rand(3,3))
+@test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(3),1.)

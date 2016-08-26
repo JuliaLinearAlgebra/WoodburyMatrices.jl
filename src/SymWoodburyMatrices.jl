@@ -119,9 +119,9 @@ function plusBDBtx!(o, B::Array{Float64,2}, D, x::Array{Float64,2})
 end
 
 # Minor optimization for the rank one case
-function plusBDBtx!(o, B::Array{Float64,1}, d::Real, x::Array{Float64,2})
-  if size(x,1) == 1
-    axpy!(dot(length(x),B,1,x,1)*d, B, o)
+function plusBDBtx!(o, B::Array{Float64,1}, d::Real, x::Union{Array{Float64,2}, SubArray})
+  if size(x,2) == 1
+    axpy!(vecdot(B,x)*d, B, o)
   else
     w = d*gemm('T', 'N' ,reshape(B, size(B,1), 1),x);
     gemm!('N','N',1.,B,w,1., o)    
@@ -144,12 +144,12 @@ Base.full{T}(O::SymWoodbury{T})      = full(O.A) + O.B*O.D*O.B'
 Base.copy{T}(O::SymWoodbury{T})      = SymWoodbury(copy(O.A), copy(O.B), copy(O.D))
 
 function square(O::SymWoodbury)
-  A  = O.A^2;
-  AB = O.A*O.B;
-  Z  = [(AB + O.B) (AB - O.B)];
-  R  = O.D*(O.B'*O.B)*O.D/4;
+  A  = O.A^2
+  AB = O.A*O.B
+  Z  = [(AB + O.B) (AB - O.B)]
+  R  = O.D*(O.B'*O.B)*O.D/4
   D  = [ O.D/2 + R  -R 
-        -R          -O.D/2 + R ];
+        -R          -O.D/2 + R ]
   SymWoodbury(A, Z, D)
 end
 
