@@ -129,7 +129,7 @@ function plusBDBtx!(o, B::Array{Float64,1}, d::Real, x::Union{Array{Float64,2}, 
 end
 
 Base.Ac_mul_B{T}(O1::SymWoodbury{T}, x::AbstractVector{T}) = O1*x
-Base.Ac_mul_B{T}(O1::SymWoodbury{T}, x::AbstractMatrix{T}) = O1*x
+Base.Ac_mul_B(O1::SymWoodbury, x::AbstractMatrix) = O1*x
 
 +(O::SymWoodbury, M::SymWoodbury)    = SymWoodbury(O.A + M.A, [O.B M.B],
                                                    cat([1,2],O.D,M.D) );
@@ -174,8 +174,6 @@ function *(O1::SymWoodbury, O2::SymWoodbury)
   end
 end
 
-Base.Ac_mul_B{T}(O1::SymWoodbury{T}, O2::SymWoodbury{T}) = O1*O2
-Base.Ac_mul_B(O1::SymWoodbury, O2::SymWoodbury) = O1*O2
 Base.A_mul_Bc(O1::SymWoodbury, O2::SymWoodbury) = O1*O2
 
 conjm(O::SymWoodbury, M) = SymWoodbury(M*O.A*M', M*O.B, O.D);

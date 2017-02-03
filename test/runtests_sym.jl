@@ -30,7 +30,6 @@ for elty in (Float32, Float64, Complex64, Complex128, Int), AMat in (diagm,)
     for W in (SymWoodbury(A, B, D), SymWoodbury(A, B[:,1][:], 2.))
 
         F = full(W)
-
         @test (2*W)*v ≈ 2*(W*v)
         @test W'*v ≈ W*v
         @test (W'W)*v ≈ full(W)*(full(W)*v)
@@ -61,7 +60,6 @@ for elty in (Float32, Float64, Complex64, Complex128, Int), AMat in (diagm,)
         end
 
         v = rand(n,1)
-
         W2 = convert(Woodbury, W)
         @test full(W2) ≈ full(W)
 

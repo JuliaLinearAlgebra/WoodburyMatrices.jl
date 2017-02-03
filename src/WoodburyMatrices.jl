@@ -47,9 +47,7 @@ function Woodbury{T}(A, U::AbstractMatrix{T}, C, V::AbstractMatrix{T})
 end
 
 Woodbury{T}(A, U::Vector{T}, C, V::Matrix{T}) = Woodbury(A, reshape(U, length(U), 1), C, V)
-@static if isdefined(:RowVector)
-    Woodbury(A, U::AbstractVector, C, V::RowVector) = Woodbury(A, U, C, Matrix(V))
-end
+@static if isdefined(:RowVector)    Woodbury(A, U::AbstractVector, C, V::RowVector) = Woodbury(A, U, C, Matrix(V)) end
 
 size(W::Woodbury) = size(W.A)
 
