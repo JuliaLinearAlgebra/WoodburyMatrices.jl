@@ -6,8 +6,8 @@ using Base.LinAlg.BLAS:gemm!,gemm,axpy!
 Represents a matrix of the form A + BDBᵀ.
 """
 type SymWoodbury{T,AType, BType, DType} <: AbstractMatrix{T}
-  A::AType; 
-  B::BType; 
+  A::AType;
+  B::BType;
   D::DType;
 end
 
@@ -28,7 +28,7 @@ end
 function SymWoodbury{T}(A, B::AbstractVector{T}, D::T)
     n = size(A, 1)
     k = 1
-    if size(A, 2) != n || length(B) != n 
+    if size(A, 2) != n || length(B) != n
         throw(DimensionMismatch("Sizes of B ($(size(B))) and/or D ($(size(D))) are inconsistent with A ($(size(A)))"))
     end
     SymWoodbury{T,typeof(A),typeof(B),typeof(D)}(A,B,D)
@@ -47,14 +47,14 @@ function calc_inv(A, B, D)
   SymWoodbury(W,X,Z);
 end
 
-Base.inv{T<:Any, AType<:Any, BType<:AbstractVector, DType<:Real}(O::SymWoodbury{T,AType,BType,DType}) = 
+Base.inv{T<:Any, AType<:Any, BType<:AbstractVector, DType<:Real}(O::SymWoodbury{T,AType,BType,DType}) =
   calc_inv(O.A, O.B, O.D)
 
-Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:AbstractMatrix}(O::SymWoodbury{T,AType,BType,DType}) = 
+Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:AbstractMatrix}(O::SymWoodbury{T,AType,BType,DType}) =
   calc_inv(O.A, O.B, O.D)
 
-# D is typically small, so this is acceptable. 
-Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:SparseMatrixCSC}(O::SymWoodbury{T,AType,BType,DType}) = 
+# D is typically small, so this is acceptable.
+Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:SparseMatrixCSC}(O::SymWoodbury{T,AType,BType,DType}) =
   calc_inv(O.A, O.B, full(O.D));
 
 \(W::SymWoodbury, R::StridedVecOrMat) = inv(W)*R
@@ -100,7 +100,7 @@ on evaluation, i.e. `liftFactor(A)(x)` is the same as `inv(A)*x`.
 """
 liftFactor(O::SymWoodbury) = liftFactorVars(O.A,O.B,O.D)
 
-function *{T}(O::SymWoodbury{T}, x::Union{Matrix,Vector,SubArray}) 
+function *{T}(O::SymWoodbury{T}, x::Union{Matrix,Vector,SubArray})
   o = O.A*x;
   plusBDBtx!(o, O.B, O.D, x)
   return o
@@ -112,7 +112,7 @@ end
 
 plusBDBtx!(o, B::AbstractVector, D, x) = plusBDBtx!(o, reshape(B,size(B,1),1),D,x)
 
-# Optimization - use specialized BLAS package 
+# Optimization - use specialized BLAS package
 function plusBDBtx!(o, B::Array{Float64,2}, D, x::Array{Float64,2})
   w = D*gemm('T','N',B,x);
   gemm!('N','N',1.,B,w,1., o)
@@ -124,12 +124,12 @@ function plusBDBtx!(o, B::Array{Float64,1}, d::Real, x::Union{Array{Float64,2}, 
     axpy!(vecdot(B,x)*d, B, o)
   else
     w = d*gemm('T', 'N' ,reshape(B, size(B,1), 1),x);
-    gemm!('N','N',1.,B,w,1., o)    
+    gemm!('N','N',1.,B,w,1., o)
   end
 end
 
 Base.Ac_mul_B{T}(O1::SymWoodbury{T}, x::AbstractVector{T}) = O1*x
-Base.Ac_mul_B{T}(O1::SymWoodbury{T}, x::AbstractMatrix{T}) = O1*x
+Base.Ac_mul_B(O1::SymWoodbury, x::AbstractMatrix) = O1*x
 
 +(O::SymWoodbury, M::SymWoodbury)    = SymWoodbury(O.A + M.A, [O.B M.B],
                                                    cat([1,2],O.D,M.D) );
@@ -148,7 +148,7 @@ function square(O::SymWoodbury)
   AB = O.A*O.B
   Z  = [(AB + O.B) (AB - O.B)]
   R  = O.D*(O.B'*O.B)*O.D/4
-  D  = [ O.D/2 + R  -R 
+  D  = [ O.D/2 + R  -R
         -R          -O.D/2 + R ]
   SymWoodbury(A, Z, D)
 end
@@ -159,11 +159,11 @@ except when they are the same, i.e. the user writes A'A or A*A' or A*A.
 
 Z(A + B*D*Bᵀ) = ZA + ZB*D*Bᵀ
 
-This package will not support support left multiplication by a generic 
+This package will not support support left multiplication by a generic
 matrix, to keep return types consistent.
 """
 function *(O1::SymWoodbury, O2::SymWoodbury)
-  if (O1 === O2) 
+  if (O1 === O2)
     return square(O1)
   else
     if O1.A == O2.A && O1.B == O2.B && O1.D == O2.D
@@ -174,7 +174,6 @@ function *(O1::SymWoodbury, O2::SymWoodbury)
   end
 end
 
-Base.Ac_mul_B(O1::SymWoodbury, O2::SymWoodbury) = O1*O2
 Base.A_mul_Bc(O1::SymWoodbury, O2::SymWoodbury) = O1*O2
 
 conjm(O::SymWoodbury, M) = SymWoodbury(M*O.A*M', M*O.B, O.D);
@@ -187,6 +186,6 @@ Base.sparse(O::SymWoodbury) = sparse(full(O))
 
 # returns a pointer to the original matrix, this is consistent with the
 # behavior of Symmetric in Base.
-Base.ctranspose(O::SymWoodbury) = O 
+Base.ctranspose(O::SymWoodbury) = O
 
 Base.det(W::SymWoodbury) = det(convert(Woodbury, W))

@@ -38,15 +38,16 @@ function Woodbury{T}(A, U::AbstractMatrix{T}, C, V::AbstractMatrix{T})
     end
     Cp = inv(inv(C) + V*(A\U))
     # temporary space for allocation-free solver
-    tmpN1 = Array(T, N)
-    tmpN2 = Array(T, N)
-    tmpk1 = Array(T, k)
-    tmpk2 = Array(T, k)
+    tmpN1 = Array{T,1}(N)
+    tmpN2 = Array{T,1}(N)
+    tmpk1 = Array{T,1}(k)
+    tmpk2 = Array{T,1}(k)
     # don't copy A, it could be huge
     Woodbury{T,typeof(A),typeof(U),typeof(V),typeof(C),typeof(Cp)}(A, copy(U), copy(C), Cp, copy(V), tmpN1, tmpN2, tmpk1, tmpk2)
 end
 
 Woodbury{T}(A, U::Vector{T}, C, V::Matrix{T}) = Woodbury(A, reshape(U, length(U), 1), C, V)
+@static if isdefined(:RowVector)    Woodbury(A, U::AbstractVector, C, V::RowVector) = Woodbury(A, U, C, Matrix(V)) end
 
 size(W::Woodbury) = size(W.A)
 

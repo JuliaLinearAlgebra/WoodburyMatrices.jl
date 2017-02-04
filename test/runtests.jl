@@ -45,14 +45,14 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     # Woodbury
     W = Woodbury(T, U, C, V)
     F = full(W)
-    @test_approx_eq W*v F*v
+    @test W*v ≈ F*v
     iFv = F\v
     @test norm(W\v - iFv)/norm(iFv) <= n*cond(F)*ε # Revisit. Condition number is wrong
     @test abs((det(W) - det(F))/det(F)) <= n*cond(F)*ε # Revisit. Condition number is wrong
     iWv = similar(iFv)
     if elty != Int
         iWv = A_ldiv_B!(W, copy(v))
-        @test_approx_eq iWv iFv
+        @test iWv ≈ iFv
     end
 end
 
@@ -110,7 +110,7 @@ for i in 1:5  # repeat 5 times
         by_hand[i, j] = v
     end
 
-    @test maxabs(out - by_hand) == 0.0
+    @test maximum(abs,out - by_hand) == 0.0
 end
 
 include("runtests_sym.jl")
