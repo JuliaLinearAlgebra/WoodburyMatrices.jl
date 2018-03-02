@@ -1,4 +1,5 @@
 using WoodburyMatrices
+using Compat
 using Compat.LinearAlgebra
 using Compat.Random: srand
 using Compat.SparseArrays

@@ -4,8 +4,14 @@ module WoodburyMatrices
 
 using Compat
 using Compat.LinearAlgebra
-import Compat.LinearAlgebra: A_ldiv_B!, det
+import Compat.LinearAlgebra: det, A_ldiv_B!
 import Base: *, \, convert, copy, show, similar, size
+
+# TOOD: remove these definitions once Compat.jl catches up
+@static if VERSION <= v"0.7.0-DEV.3185"
+    const ldiv! = A_ldiv_B!
+    const mul! = A_mul_B!
+end
 
 export Woodbury, SymWoodbury, liftFactor
 
@@ -51,7 +57,11 @@ function Woodbury(A, U::AbstractMatrix{T}, C, V::AbstractMatrix{T}) where {T}
 end
 
 Woodbury(A, U::Vector{T}, C, V::Matrix{T}) where {T} = Woodbury(A, reshape(U, length(U), 1), C, V)
-Woodbury(A, U::AbstractVector, C, V::Adjoint) = Woodbury(A, U, C, Matrix(V))
+@static if VERSION <= v"0.7.0-DEV.3040"
+    Woodbury(A, U::AbstractVector, C, V::RowVector) = Woodbury(A, U, C, Matrix(V))
+else
+    Woodbury(A, U::AbstractVector, C, V::Adjoint) = Woodbury(A, U, C, Matrix(V))
+end
 
 size(W::Woodbury) = size(W.A)
 
