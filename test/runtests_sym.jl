@@ -1,11 +1,11 @@
-using Base.Test
+using Compat
+using Compat.Test
 using WoodburyMatrices
-using Compat:view
 
 srand(123)
 n = 5
 
-for elty in (Float32, Float64, Complex64, Complex128, Int), AMat in (diagm,)
+for elty in (Float32, Float64, ComplexF32, ComplexF64, Int), AMat in (diagm,)
 
     elty = Float64
 
@@ -29,47 +29,47 @@ for elty in (Float32, Float64, Complex64, Complex128, Int), AMat in (diagm,)
     # Woodbury
     for W in (SymWoodbury(A, B, D), SymWoodbury(A, B[:,1][:], 2.))
 
-        F = full(W)
+        F = Matrix(W)
         @test (2*W)*v ≈ 2*(W*v)
         @test W'*v ≈ W*v
-        @test (W'W)*v ≈ full(W)*(full(W)*v)
-        @test (W*W)*v ≈ full(W)*(full(W)*v)
-        @test (W*W')*v ≈ full(W)*(full(W)*v)
-        @test W[1:3,1:3]*v[1:3] ≈ full(W)[1:3,1:3]*v[1:3]
-        @test sparse(W) ≈ full(W)
+        @test (W'W)*v ≈ Matrix(W)*(Matrix(W)*v)
+        @test (W*W)*v ≈ Matrix(W)*(Matrix(W)*v)
+        @test (W*W')*v ≈ Matrix(W)*(Matrix(W)*v)
+        @test W[1:3,1:3]*v[1:3] ≈ Matrix(W)[1:3,1:3]*v[1:3]
+        @test sparse(W) ≈ Matrix(W)
         @test W === W'
-        @test W*eye(n) ≈ full(W)
-        @test W'*eye(n) ≈ full(W)
+        @test W*eye(n) ≈ Matrix(W)
+        @test W'*eye(n) ≈ Matrix(W)
 
         Z = randn(n,n)
-        @test full(W*Z) ≈ full(W)*Z
+        @test Matrix(W*Z) ≈ Matrix(W)*Z
 
         R = rand(n,n)
 
         for v = (rand(n, 1), view(rand(n,1), 1:n), view(rand(n,2),1:n,1:2))
             @test (2*W)*v ≈ 2*(W*v)
             @test (W*2)*v ≈ 2*(W*v)
-            @test (W'W)*v ≈ full(W)*(full(W)*v)
-            @test (W*W)*v ≈ full(W)*(full(W)*v)
-            @test (W*W')*v ≈ full(W)*(full(W)*v)
-            @test W[1:3,1:3]*v[1:3] ≈ full(W)[1:3,1:3]*v[1:3]
-            @test full(WoodburyMatrices.conjm(W, R)) ≈ R*full(W)*R'
-            @test full((copy(W)'W)*v) ≈ full(W)*(full(W)*v)
-            @test full(W + A) ≈ full(W)+full(A)
-            @test full(A + W) ≈ full(W)+full(A)
+            @test (W'W)*v ≈ Matrix(W)*(Matrix(W)*v)
+            @test (W*W)*v ≈ Matrix(W)*(Matrix(W)*v)
+            @test (W*W')*v ≈ Matrix(W)*(Matrix(W)*v)
+            @test W[1:3,1:3]*v[1:3] ≈ Matrix(W)[1:3,1:3]*v[1:3]
+            @test Matrix(WoodburyMatrices.conjm(W, R)) ≈ R*Matrix(W)*R'
+            @test Matrix((copy(W)'W)*v) ≈ Matrix(W)*(Matrix(W)*v)
+            @test Matrix(W + A) ≈ Matrix(W)+Matrix(A)
+            @test Matrix(A + W) ≈ Matrix(W)+Matrix(A)
         end
 
         v = rand(n,1)
         W2 = convert(Woodbury, W)
-        @test full(W2) ≈ full(W)
+        @test Matrix(W2) ≈ Matrix(W)
 
         if elty != Int
-            @test inv(W)*v ≈ inv(full(W))*v
-            @test W\v ≈ inv(full(W))*v
+            @test inv(W)*v ≈ inv(Matrix(W))*v
+            @test W\v ≈ inv(Matrix(W))*v
             @test liftFactor(W)(v) ≈ inv(W)*v
             @test WoodburyMatrices.partialInv(W)[1] ≈ inv(W).B
             @test WoodburyMatrices.partialInv(W)[2] ≈ inv(W).D
-            @test det(W) ≈ det(full(W))
+            @test det(W) ≈ det(Matrix(W))
         end
 
     end
@@ -119,9 +119,9 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     W2r = SymWoodbury(A2, B2[:,1][:], 3.)
 
     for (W1, W2) = ((W1,W2), (W1r, W2), (W1, W2r), (W1r,W2r))
-        @test (W1 + W2)*v ≈ (full(W1) + full(W2))*v
-        @test (full(W1) + W2)*v ≈ (full(W1) + full(W2))*v
-        @test (W1 + 2*diagm(a1))*v ≈ (full(W1) + full(2*diagm(a1)))*v
+        @test (W1 + W2)*v ≈ (Matrix(W1) + Matrix(W2))*v
+        @test (Matrix(W1) + W2)*v ≈ (Matrix(W1) + Matrix(W2))*v
+        @test (W1 + 2*diagm(a1))*v ≈ (Matrix(W1) + Matrix(2*diagm(a1)))*v
         @test_throws MethodError W1*W2
     end
 
@@ -140,18 +140,18 @@ V = randn(n,1)
 @test size(W,1) == n
 @test size(W,2) == n
 
-@test inv(W)*v ≈ inv(full(W))*v
+@test inv(W)*v ≈ inv(Matrix(W))*v
 @test (2*W)*v ≈ 2*(W*v)
-@test (W'W)*v ≈ full(W)*(full(W)*v)
-@test (W*W)*v ≈ full(W)*(full(W)*v)
-@test (W*W')*v ≈ full(W)*(full(W)*v)
+@test (W'W)*v ≈ Matrix(W)*(Matrix(W)*v)
+@test (W*W)*v ≈ Matrix(W)*(Matrix(W)*v)
+@test (W*W')*v ≈ Matrix(W)*(Matrix(W)*v)
 @test liftFactor(W)(v) ≈ inv(W)*v
 
-@test inv(W)*V ≈ inv(full(W))*V
+@test inv(W)*V ≈ inv(Matrix(W))*V
 @test (2*W)*V ≈ 2*(W*V)
-@test (W'W)*V ≈ full(W)*(full(W)*V)
-@test (W*W)*V ≈ full(W)*(full(W)*V)
-@test (W*W')*V ≈ full(W)*(full(W)*V)
+@test (W'W)*V ≈ Matrix(W)*(Matrix(W)*V)
+@test (W*W)*V ≈ Matrix(W)*(Matrix(W)*V)
+@test (W*W')*V ≈ Matrix(W)*(Matrix(W)*V)
 
 # Mismatched sizes
 @test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(5,2),rand(2,3))

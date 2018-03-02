@@ -1,11 +1,13 @@
-import Base:+,*,-,\,^,sparse,full,copy
+import Base:+,*,-,\,^,copy
 
-using Base.LinAlg.BLAS:gemm!,gemm,axpy!
+using Compat.LinearAlgebra.BLAS:gemm!,gemm,axpy!
+using Compat.SparseArrays
+import Compat.SparseArrays.sparse
 
 """
 Represents a matrix of the form A + BDBᵀ.
 """
-type SymWoodbury{T,AType, BType, DType} <: AbstractMatrix{T}
+mutable struct SymWoodbury{T,AType, BType, DType} <: AbstractMatrix{T}
   A::AType;
   B::BType;
   D::DType;
@@ -16,7 +18,7 @@ end
 
 Represents a matrix of the form A + BDBᵀ.
 """
-function SymWoodbury{T}(A, B::AbstractMatrix{T}, D)
+function SymWoodbury(A, B::AbstractMatrix{T}, D) where {T}
     n = size(A, 1)
     k = size(B, 2)
     if size(A, 2) != n || size(B, 1) != n || size(D,1) != k || size(D,2) != k
@@ -25,7 +27,7 @@ function SymWoodbury{T}(A, B::AbstractMatrix{T}, D)
     SymWoodbury{T, typeof(A),typeof(B),typeof(D)}(A,B,D)
 end
 
-function SymWoodbury{T}(A, B::AbstractVector{T}, D::T)
+function SymWoodbury(A, B::AbstractVector{T}, D::T) where {T}
     n = size(A, 1)
     k = 1
     if size(A, 2) != n || length(B) != n
@@ -34,7 +36,7 @@ function SymWoodbury{T}(A, B::AbstractVector{T}, D::T)
     SymWoodbury{T,typeof(A),typeof(B),typeof(D)}(A,B,D)
 end
 
-convert{W<:Woodbury}(::Type{W}, O::SymWoodbury) = Woodbury(O.A, O.B, O.D, O.B')
+convert(::Type{W}, O::SymWoodbury) where {W<:Woodbury}= Woodbury(O.A, O.B, O.D, O.B')
 
 inv_invD_BtX(invD, B, X) = inv(invD - B'*X);
 inv_invD_BtX(invD, B::AbstractVector, X) = inv(invD - vecdot(B,X));
@@ -47,15 +49,15 @@ function calc_inv(A, B, D)
   SymWoodbury(W,X,Z);
 end
 
-Base.inv{T<:Any, AType<:Any, BType<:AbstractVector, DType<:Real}(O::SymWoodbury{T,AType,BType,DType}) =
+Base.inv(O::SymWoodbury{T,AType,BType,DType}) where {T<:Any, AType<:Any, BType<:AbstractVector, DType<:Real} =
   calc_inv(O.A, O.B, O.D)
 
-Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:AbstractMatrix}(O::SymWoodbury{T,AType,BType,DType}) =
+Base.inv(O::SymWoodbury{T,AType,BType,DType}) where {T<:Any, AType<:Any, BType<:Any, DType<:AbstractMatrix} =
   calc_inv(O.A, O.B, O.D)
 
 # D is typically small, so this is acceptable.
-Base.inv{T<:Any, AType<:Any, BType<:Any, DType<:SparseMatrixCSC}(O::SymWoodbury{T,AType,BType,DType}) =
-  calc_inv(O.A, O.B, full(O.D));
+Base.inv(O::SymWoodbury{T,AType,BType,DType}) where {T<:Any, AType<:Any, BType<:Any, DType<:SparseMatrixCSC} =
+  calc_inv(O.A, O.B, Matrix(O.D));
 
 \(W::SymWoodbury, R::StridedVecOrMat) = inv(W)*R
 
@@ -84,7 +86,7 @@ function liftFactorVars(A,B,D)
 end
 
 function liftFactorVars(A,B,D::SparseMatrixCSC)
-  liftFactorVars(A,B,full(D))
+  liftFactorVars(A,B,Matrix(D))
 end
 
 # This could be optimized to avoid the extra allocation of a single element matrix
@@ -100,7 +102,7 @@ on evaluation, i.e. `liftFactor(A)(x)` is the same as `inv(A)*x`.
 """
 liftFactor(O::SymWoodbury) = liftFactorVars(O.A,O.B,O.D)
 
-function *{T}(O::SymWoodbury{T}, x::Union{Matrix,Vector,SubArray})
+function *(O::SymWoodbury{T}, x::Union{Matrix,Vector,SubArray}) where {T}
   o = O.A*x;
   plusBDBtx!(o, O.B, O.D, x)
   return o
@@ -128,8 +130,10 @@ function plusBDBtx!(o, B::Array{Float64,1}, d::Real, x::Union{Array{Float64,2}, 
   end
 end
 
-Base.Ac_mul_B{T}(O1::SymWoodbury{T}, x::AbstractVector{T}) = O1*x
-Base.Ac_mul_B(O1::SymWoodbury, x::AbstractMatrix) = O1*x
+*(O1::Adjoint{T, <:SymWoodbury{T}}, x::AbstractVector{T}) where {T} = parent(O1) * x
+*(O1::Adjoint{T, <:SymWoodbury{T}}, x::AbstractMatrix) where {T} = parent(O1) * x
+# Base.Ac_mul_B(O1::SymWoodbury{T}, x::AbstractVector{T}) where {T} = O1*x
+# Base.Ac_mul_B(O1::SymWoodbury, x::AbstractMatrix) = O1*x
 
 +(O::SymWoodbury, M::SymWoodbury)    = SymWoodbury(O.A + M.A, [O.B M.B],
                                                    cat([1,2],O.D,M.D) );
@@ -140,8 +144,8 @@ Base.Ac_mul_B(O1::SymWoodbury, x::AbstractMatrix) = O1*x
 Base.size(M::SymWoodbury)            = size(M.A);
 Base.size(M::SymWoodbury, i)         = (i == 1 || i == 2) ? size(M)[1] : 1
 
-Base.full{T}(O::SymWoodbury{T})      = full(O.A) + O.B*O.D*O.B'
-Base.copy{T}(O::SymWoodbury{T})      = SymWoodbury(copy(O.A), copy(O.B), copy(O.D))
+Base.Matrix(O::SymWoodbury{T}) where {T} = Matrix(O.A) + O.B*O.D*O.B'
+Base.copy(O::SymWoodbury{T}) where {T} = SymWoodbury(copy(O.A), copy(O.B), copy(O.D))
 
 function square(O::SymWoodbury)
   A  = O.A^2
@@ -182,10 +186,10 @@ Base.getindex(O::SymWoodbury, I::UnitRange, I2::UnitRange) =
   SymWoodbury(O.A[I,I], O.B[I,:], O.D);
 
 # This is a slow hack, but generally these matrices aren't sparse.
-Base.sparse(O::SymWoodbury) = sparse(full(O))
+Compat.SparseArrays.sparse(O::SymWoodbury) = sparse(Matrix(O))
 
 # returns a pointer to the original matrix, this is consistent with the
 # behavior of Symmetric in Base.
 Base.ctranspose(O::SymWoodbury) = O
 
-Base.det(W::SymWoodbury) = det(convert(Woodbury, W))
+Compat.LinearAlgebra.det(W::SymWoodbury) = det(convert(Woodbury, W))
