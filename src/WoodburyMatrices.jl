@@ -37,18 +37,21 @@ function Woodbury(A, U::AbstractMatrix{T}, C, V::AbstractMatrix{T}) where {T}
             throw(DimensionMismatch("C should be $(k)x$(k)"))
         end
     end
-    Cp = inv(inv(C) + V*(A\U))
+    Cp = inv(convert(Matrix, inv(C) .+ V*(A\U)))
     # temporary space for allocation-free solver
     tmpN1 = Array{T,1}(uninitialized, N)
     tmpN2 = Array{T,1}(uninitialized, N)
     tmpk1 = Array{T,1}(uninitialized, k)
     tmpk2 = Array{T,1}(uninitialized, k)
-    # don't copy A, it could be huge
-    Woodbury{T,typeof(A),typeof(U),typeof(V),typeof(C),typeof(Cp)}(A, copy(U), copy(C), Cp, copy(V), tmpN1, tmpN2, tmpk1, tmpk2)
+
+    # Construct the struct based on the types of the copies,
+    # not the originals. See: https://github.com/JuliaLang/julia/issues/26294
+    # don't copy A, it could be huge.
+    Woodbury(A, copy(U), copy(C), Cp, copy(V), tmpN1, tmpN2, tmpk1, tmpk2)
 end
 
 Woodbury(A, U::Vector{T}, C, V::Matrix{T}) where {T} = Woodbury(A, reshape(U, length(U), 1), C, V)
-Woodbury(A, U::AbstractVector, C, V::RowVector) = Woodbury(A, U, C, Matrix(V))
+Woodbury(A, U::AbstractVector, C, V::Adjoint) = Woodbury(A, U, C, Matrix(V))
 
 size(W::Woodbury) = size(W.A)
 

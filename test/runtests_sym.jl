@@ -5,7 +5,7 @@ using WoodburyMatrices
 srand(123)
 n = 5
 
-for elty in (Float32, Float64, ComplexF32, ComplexF64, Int), AMat in (diagm,)
+for elty in (Float32, Float64, ComplexF32, ComplexF64, Int), AMat in (x -> Matrix(Diagonal(x)),)
 
     elty = Float64
 
@@ -38,8 +38,8 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int), AMat in (diagm,)
         @test W[1:3,1:3]*v[1:3] ≈ Matrix(W)[1:3,1:3]*v[1:3]
         @test sparse(W) ≈ Matrix(W)
         @test W === W'
-        @test W*eye(n) ≈ Matrix(W)
-        @test W'*eye(n) ≈ Matrix(W)
+        @test W*Matrix(1.0I, n, n) ≈ Matrix(W)
+        @test W'*Matrix(1.0I, n, n) ≈ Matrix(W)
 
         Z = randn(n,n)
         @test Matrix(W*Z) ≈ Matrix(W)*Z
@@ -54,7 +54,7 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int), AMat in (diagm,)
             @test (W*W')*v ≈ Matrix(W)*(Matrix(W)*v)
             @test W[1:3,1:3]*v[1:3] ≈ Matrix(W)[1:3,1:3]*v[1:3]
             @test Matrix(WoodburyMatrices.conjm(W, R)) ≈ R*Matrix(W)*R'
-            @test Matrix((copy(W)'W)*v) ≈ Matrix(W)*(Matrix(W)*v)
+            @test Matrix(copy(W)'W)*v ≈ Matrix(W)*(Matrix(W)*v)
             @test Matrix(W + A) ≈ Matrix(W)+Matrix(A)
             @test Matrix(A + W) ≈ Matrix(W)+Matrix(A)
         end
@@ -77,7 +77,7 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int), AMat in (diagm,)
 end
 
 
-for elty in (Float32, Float64, Complex64, Complex128, Int)
+for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
 
     elty = Float64
 
@@ -109,8 +109,8 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     ε = eps(abs2(float(one(elty))))
 
     # Woodbury
-    A1 = diagm(a1)
-    A2 = diagm(a2)
+    A1 = Matrix(Diagonal((a1)))
+    A2 = Matrix(Diagonal((a2)))
 
     W1 = SymWoodbury(A1, B1, D1)
     W2 = SymWoodbury(A2, B2, D2)
@@ -121,7 +121,7 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
     for (W1, W2) = ((W1,W2), (W1r, W2), (W1, W2r), (W1r,W2r))
         @test (W1 + W2)*v ≈ (Matrix(W1) + Matrix(W2))*v
         @test (Matrix(W1) + W2)*v ≈ (Matrix(W1) + Matrix(W2))*v
-        @test (W1 + 2*diagm(a1))*v ≈ (Matrix(W1) + Matrix(2*diagm(a1)))*v
+        @test (W1 + 2*Matrix(Diagonal((a1))))*v ≈ (Matrix(W1) + Matrix(2*Matrix(Diagonal((a1)))))*v
         @test_throws MethodError W1*W2
     end
 
@@ -129,7 +129,7 @@ end
 
 # Sparse U and D
 
-A = diagm(rand(n))
+A = Matrix(Diagonal((rand(n))))
 B = sprandn(n,2,1.)
 D = sprandn(2,2,1.)
 W = SymWoodbury(A, B, D)

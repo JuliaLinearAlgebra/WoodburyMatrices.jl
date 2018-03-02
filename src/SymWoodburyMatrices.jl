@@ -36,7 +36,7 @@ function SymWoodbury(A, B::AbstractVector{T}, D::T) where {T}
     SymWoodbury{T,typeof(A),typeof(B),typeof(D)}(A,B,D)
 end
 
-convert(::Type{W}, O::SymWoodbury) where {W<:Woodbury}= Woodbury(O.A, O.B, O.D, O.B')
+convert(::Type{W}, O::SymWoodbury) where {W<:Woodbury} = Woodbury(O.A, O.B, O.D, O.B')
 
 inv_invD_BtX(invD, B, X) = inv(invD - B'*X);
 inv_invD_BtX(invD, B::AbstractVector, X) = inv(invD - vecdot(B,X));
@@ -130,10 +130,8 @@ function plusBDBtx!(o, B::Array{Float64,1}, d::Real, x::Union{Array{Float64,2}, 
   end
 end
 
-*(O1::Adjoint{T, <:SymWoodbury{T}}, x::AbstractVector{T}) where {T} = parent(O1) * x
-*(O1::Adjoint{T, <:SymWoodbury{T}}, x::AbstractMatrix) where {T} = parent(O1) * x
-# Base.Ac_mul_B(O1::SymWoodbury{T}, x::AbstractVector{T}) where {T} = O1*x
-# Base.Ac_mul_B(O1::SymWoodbury, x::AbstractMatrix) = O1*x
+Base.Ac_mul_B(O1::SymWoodbury{T}, x::AbstractVector{T}) where {T} = O1*x
+Base.Ac_mul_B(O1::SymWoodbury, x::AbstractMatrix) = O1*x
 
 +(O::SymWoodbury, M::SymWoodbury)    = SymWoodbury(O.A + M.A, [O.B M.B],
                                                    cat([1,2],O.D,M.D) );
@@ -190,6 +188,6 @@ Compat.SparseArrays.sparse(O::SymWoodbury) = sparse(Matrix(O))
 
 # returns a pointer to the original matrix, this is consistent with the
 # behavior of Symmetric in Base.
-Base.ctranspose(O::SymWoodbury) = O
+Compat.adjoint(O::SymWoodbury) = O
 
 Compat.LinearAlgebra.det(W::SymWoodbury) = det(convert(Woodbury, W))
