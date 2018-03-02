@@ -5,7 +5,7 @@ using Compat.Random: srand
 using Compat.SparseArrays
 using Compat.Test
 
-@testset "woodbury matrices" begin
+@testset "WoodburyMatrices" begin
 srand(123)
 n = 5
 
