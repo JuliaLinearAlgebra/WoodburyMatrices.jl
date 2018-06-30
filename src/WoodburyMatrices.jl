@@ -1,4 +1,5 @@
-isdefined(Base, :__precompile__) && __precompile__()
+__precompile__()
+
 
 module WoodburyMatrices
 
@@ -141,7 +142,7 @@ julia> r*c*v - Diagonal([2.0, 3.0, 4.0])
 ```
 
 """
-function sparse_factors(::Type{T}, n::Int, args::@compat(Tuple{Int, Int, Any})...) where {T}
+function sparse_factors(::Type{T}, n::Int, args::Tuple{Int, Int, Any}...) where {T}
     m = length(args)
     rows = spzeros(T, n, m)
     cols = spzeros(T, m, n)
