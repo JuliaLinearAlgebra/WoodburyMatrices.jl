@@ -1,6 +1,11 @@
 using WoodburyMatrices
-using Base.Test
+using Compat
+using Compat.LinearAlgebra
+using Compat.Random: srand
+using Compat.SparseArrays
+using Compat.Test
 
+@testset "WoodburyMatrices" begin
 srand(123)
 n = 5
 
@@ -14,7 +19,7 @@ U = randn(n,2)
 V = randn(2,n)
 C = randn(2,2)
 
-for elty in (Float32, Float64, Complex64, Complex128, Int)
+for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     if elty == Int
         srand(61516384)
         d = rand(1:100, n)
@@ -44,7 +49,7 @@ for elty in (Float32, Float64, Complex64, Complex128, Int)
 
     # Woodbury
     W = Woodbury(T, U, C, V)
-    F = full(W)
+    F = Matrix(W)
     @test W*v ≈ F*v
     iFv = F\v
     @test norm(W\v - iFv)/norm(iFv) <= n*cond(F)*ε # Revisit. Condition number is wrong
@@ -66,7 +71,7 @@ U = sprandn(n,2,0.2)
 V = sprandn(2,n,0.2)
 C = randn(2,2)
 W = Woodbury(T, U, C, V)
-F = full(W)
+F = Matrix(W)
 
 v = randn(n)
 ε = eps()
@@ -82,7 +87,7 @@ U = rand(n)
 C = 2.3
 V = rand(1,n)
 W = Woodbury(T, U, C, V)
-F = full(W)
+F = Matrix(W)
 
 v = randn(n)
 ε = eps()
@@ -114,3 +119,4 @@ for i in 1:5  # repeat 5 times
 end
 
 include("runtests_sym.jl")
+end
