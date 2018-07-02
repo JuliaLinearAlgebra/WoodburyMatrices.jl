@@ -1,8 +1,8 @@
 import Base:+,*,-,\,^,copy
 
-using Compat.LinearAlgebra.BLAS:gemm!,gemm,axpy!
-using Compat.SparseArrays
-import Compat.SparseArrays.sparse
+using LinearAlgebra.BLAS: gemm!, gemm, axpy!
+using SparseArrays
+import SparseArrays.sparse
 
 """
 Represents a matrix of the form A + BDBᵀ.
@@ -39,7 +39,7 @@ end
 convert(::Type{W}, O::SymWoodbury) where {W<:Woodbury} = Woodbury(O.A, O.B, O.D, O.B')
 
 inv_invD_BtX(invD, B, X) = inv(invD - B'*X);
-inv_invD_BtX(invD, B::AbstractVector, X) = inv(invD - vecdot(B,X));
+inv_invD_BtX(invD, B::AbstractVector, X) = inv(invD - dot(B,X));
 
 function calc_inv(A, B, D)
   W = inv(A);
@@ -81,7 +81,7 @@ function liftFactorVars(A,B,D)
   k  = size(B,2)
   M = [A    B   ;
        B'  -Di ];
-  M = lufact(M) # ldltfact once it's available.
+  M = lu(M) # ldltfact once it's available.
   return x -> (M\[x; zeros(k,1)])[1:n,:];
 end
 
@@ -123,18 +123,15 @@ end
 # Minor optimization for the rank one case
 function plusBDBtx!(o, B::Array{Float64,1}, d::Real, x::Union{Array{Float64,2}, SubArray})
   if size(x,2) == 1
-    axpy!(vecdot(B,x)*d, B, o)
+    axpy!(dot(B,x)*d, B, o)
   else
     w = d*gemm('T', 'N' ,reshape(B, size(B,1), 1),x);
     gemm!('N','N',1.,B,w,1., o)
   end
 end
 
-Base.Ac_mul_B(O1::SymWoodbury{T}, x::AbstractVector{T}) where {T} = O1*x
-Base.Ac_mul_B(O1::SymWoodbury, x::AbstractMatrix) = O1*x
-
 +(O::SymWoodbury, M::SymWoodbury)    = SymWoodbury(O.A + M.A, [O.B M.B],
-                                                   cat([1,2],O.D,M.D) );
+                                                   cat(O.D,M.D; dims=(1,2)) );
 *(α::Real, O::SymWoodbury)           = SymWoodbury(α*O.A, O.B, α*O.D);
 *(O::SymWoodbury, α::Real)           = SymWoodbury(α*O.A, O.B, α*O.D);
 +(M::AbstractMatrix, O::SymWoodbury) = SymWoodbury(O.A + M, O.B, O.D);
@@ -176,18 +173,16 @@ function *(O1::SymWoodbury, O2::SymWoodbury)
   end
 end
 
-Base.A_mul_Bc(O1::SymWoodbury, O2::SymWoodbury) = O1*O2
-
 conjm(O::SymWoodbury, M) = SymWoodbury(M*O.A*M', M*O.B, O.D);
 
 Base.getindex(O::SymWoodbury, I::UnitRange, I2::UnitRange) =
   SymWoodbury(O.A[I,I], O.B[I,:], O.D);
 
 # This is a slow hack, but generally these matrices aren't sparse.
-Compat.SparseArrays.sparse(O::SymWoodbury) = sparse(Matrix(O))
+SparseArrays.sparse(O::SymWoodbury) = sparse(Matrix(O))
 
 # returns a pointer to the original matrix, this is consistent with the
 # behavior of Symmetric in Base.
-Compat.adjoint(O::SymWoodbury) = O
+adjoint(O::SymWoodbury) = O
 
-Compat.LinearAlgebra.det(W::SymWoodbury) = det(convert(Woodbury, W))
+det(W::SymWoodbury) = det(convert(Woodbury, W))
