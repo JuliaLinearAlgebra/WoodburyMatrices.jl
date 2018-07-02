@@ -7,10 +7,10 @@ import SparseArrays.sparse
 """
 Represents a matrix of the form A + BDBᵀ.
 """
-mutable struct SymWoodbury{T,AType, BType, DType} <: AbstractMatrix{T}
-  A::AType;
-  B::BType;
-  D::DType;
+struct SymWoodbury{T,AType, BType, DType} <: Factorization{T}
+  A::AType
+  B::BType
+  D::DType
 end
 
 """
@@ -186,3 +186,11 @@ SparseArrays.sparse(O::SymWoodbury) = sparse(Matrix(O))
 adjoint(O::SymWoodbury) = O
 
 det(W::SymWoodbury) = det(convert(Woodbury, W))
+
+function show(io::IO, W::SymWoodbury)
+    println(io, "Symmetric Woodbury factorization:\nA:")
+    show(io, MIME("text/plain"), W.A)
+    print(io, "\nB:\n")
+    Base.print_matrix(IOContext(io,:compact=>true), W.B)
+    print(io, "\nD: ", W.D)
+end

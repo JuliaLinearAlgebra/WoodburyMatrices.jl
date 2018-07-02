@@ -13,7 +13,7 @@ export Woodbury, SymWoodbury, liftFactor
 `W = Woodbury(A, U, C, V)` creates a matrix `W` identical to `A + U*C*V` whose inverse will be calculated using
 the Woodbury matrix identity.
 """
-mutable struct Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractMatrix{T}
+struct Woodbury{T,AType,UType,VType,CType,CpType} <: Factorization{T}
     A::AType
     U::UType
     C::CType
@@ -57,18 +57,18 @@ size(W::Woodbury) = size(W.A)
 size(W::Woodbury, d) = size(W.A, d)
 
 function show(io::IO, W::Woodbury)
-    println(io, summary(W), ":")
-    print(io, "A:\n", W.A)
+    println(io, "Woodbury factorization:\nA:")
+    show(io, MIME("text/plain"), W.A)
     print(io, "\nU:\n")
-    Base.print_matrix(io, W.U)
+    Base.print_matrix(IOContext(io, :compact=>true), W.U)
     if isa(W.C, Matrix)
         print(io, "\nC:\n")
-        Base.print_matrix(io, W.C)
+        Base.print_matrix(IOContext(io, :compact=>true), W.C)
     else
         print(io, "\nC: ", W.C)
     end
     print(io, "\nV:\n")
-    Base.print_matrix(io, W.V)
+    Base.print_matrix(IOContext(io, :compact=>true), W.V)
 end
 
 Base.Matrix(W::Woodbury{T}) where {T} = convert(Matrix{T}, W)
