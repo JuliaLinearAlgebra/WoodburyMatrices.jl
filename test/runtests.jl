@@ -1,9 +1,6 @@
 using WoodburyMatrices
-using Compat
-using Compat.LinearAlgebra
-using Compat.Random: srand
-using Compat.SparseArrays
-using Compat.Test
+using LinearAlgebra, SparseArrays, Test
+using Random: srand
 
 @testset "WoodburyMatrices" begin
 srand(123)
@@ -56,7 +53,7 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     @test abs((det(W) - det(F))/det(F)) <= n*cond(F)*ε # Revisit. Condition number is wrong
     iWv = similar(iFv)
     if elty != Int
-        iWv = A_ldiv_B!(W, copy(v))
+        iWv = ldiv!(W, copy(v))
         @test iWv ≈ iFv
     end
 end

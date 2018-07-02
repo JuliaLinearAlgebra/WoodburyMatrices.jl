@@ -1,18 +1,10 @@
 __precompile__()
 
-
 module WoodburyMatrices
 
-using Compat
-using Compat.LinearAlgebra
-import Compat.LinearAlgebra: det, A_ldiv_B!
+using LinearAlgebra
+import LinearAlgebra: det, ldiv!, mul!, adjoint
 import Base: *, \, convert, copy, show, similar, size
-
-# TOOD: remove these definitions once Compat.jl catches up
-@static if VERSION <= v"0.7.0-DEV.3185"
-    const ldiv! = A_ldiv_B!
-    const mul! = A_mul_B!
-end
 
 export Woodbury, SymWoodbury, liftFactor
 
@@ -21,7 +13,7 @@ export Woodbury, SymWoodbury, liftFactor
 `W = Woodbury(A, U, C, V)` creates a matrix `W` identical to `A + U*C*V` whose inverse will be calculated using
 the Woodbury matrix identity.
 """
-mutable struct Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractMatrix{T}
+struct Woodbury{T,AType,UType,VType,CType,CpType} <: Factorization{T}
     A::AType
     U::UType
     C::CType
@@ -46,10 +38,10 @@ function Woodbury(A, U::AbstractMatrix{T}, C, V::AbstractMatrix{T}) where {T}
     end
     Cp = inv(convert(Matrix, inv(C) .+ V*(A\U)))
     # temporary space for allocation-free solver
-    tmpN1 = Array{T,1}(uninitialized, N)
-    tmpN2 = Array{T,1}(uninitialized, N)
-    tmpk1 = Array{T,1}(uninitialized, k)
-    tmpk2 = Array{T,1}(uninitialized, k)
+    tmpN1 = Array{T,1}(undef, N)
+    tmpN2 = Array{T,1}(undef, N)
+    tmpk1 = Array{T,1}(undef, k)
+    tmpk2 = Array{T,1}(undef, k)
 
     # Construct the struct based on the types of the copies,
     # not the originals. See: https://github.com/JuliaLang/julia/issues/26294
@@ -58,27 +50,25 @@ function Woodbury(A, U::AbstractMatrix{T}, C, V::AbstractMatrix{T}) where {T}
 end
 
 Woodbury(A, U::Vector{T}, C, V::Matrix{T}) where {T} = Woodbury(A, reshape(U, length(U), 1), C, V)
-@static if VERSION <= v"0.7.0-DEV.3040"
-    Woodbury(A, U::AbstractVector, C, V::RowVector) = Woodbury(A, U, C, Matrix(V))
-else
-    Woodbury(A, U::AbstractVector, C, V::Adjoint) = Woodbury(A, U, C, Matrix(V))
-end
+
+Woodbury(A, U::AbstractVector, C, V::Adjoint) = Woodbury(A, U, C, Matrix(V))
 
 size(W::Woodbury) = size(W.A)
+size(W::Woodbury, d) = size(W.A, d)
 
 function show(io::IO, W::Woodbury)
-    println(io, summary(W), ":")
-    print(io, "A:\n", W.A)
+    println(io, "Woodbury factorization:\nA:")
+    show(io, MIME("text/plain"), W.A)
     print(io, "\nU:\n")
-    Base.print_matrix(io, W.U)
+    Base.print_matrix(IOContext(io, :compact=>true), W.U)
     if isa(W.C, Matrix)
         print(io, "\nC:\n")
-        Base.print_matrix(io, W.C)
+        Base.print_matrix(IOContext(io, :compact=>true), W.C)
     else
         print(io, "\nC: ", W.C)
     end
     print(io, "\nV:\n")
-    Base.print_matrix(io, W.V)
+    Base.print_matrix(IOContext(io, :compact=>true), W.V)
 end
 
 Base.Matrix(W::Woodbury{T}) where {T} = convert(Matrix{T}, W)
@@ -97,10 +87,10 @@ end
 
 det(W::Woodbury)=det(W.A)*det(W.C)/det(W.Cp)
 
-function A_ldiv_B!(W::Woodbury, B::AbstractVector)
+function ldiv!(W::Woodbury, B::AbstractVector)
     length(B) == size(W, 1) || throw(DimensionMismatch("Vector length $(length(B)) must match matrix size $(size(W,1))"))
     copyto!(W.tmpN1, B)
-    Alu = lufact(W.A) # Note. This makes an allocation (unless A::LU). Alternative is to destroy W.A.
+    Alu = lu(W.A) # Note. This makes an allocation (unless A::LU). Alternative is to destroy W.A.
     ldiv!(Alu, W.tmpN1)
     mul!(W.tmpk1, W.V, W.tmpN1)
     mul!(W.tmpk2, W.Cp, W.tmpk1)

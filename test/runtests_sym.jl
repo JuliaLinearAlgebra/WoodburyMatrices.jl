@@ -1,6 +1,5 @@
-using Compat
-using Compat.Test
 using WoodburyMatrices
+using Test
 
 srand(123)
 n = 5
