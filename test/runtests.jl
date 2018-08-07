@@ -1,9 +1,9 @@
 using WoodburyMatrices
 using LinearAlgebra, SparseArrays, Test
-using Random: srand
+using Random: seed!
 
 @testset "WoodburyMatrices" begin
-srand(123)
+seed!(123)
 n = 5
 
 d = 1 .+ rand(n)
@@ -18,7 +18,7 @@ C = randn(2,2)
 
 for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     if elty == Int
-        srand(61516384)
+        seed!(61516384)
         d = rand(1:100, n)
         dl = -rand(0:10, n-1)
         du = -rand(0:10, n-1)
