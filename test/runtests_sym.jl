@@ -1,7 +1,7 @@
 using WoodburyMatrices
 using Test
 
-srand(123)
+seed!(123)
 n = 5
 
 for elty in (Float32, Float64, ComplexF32, ComplexF64, Int), AMat in (x -> Matrix(Diagonal(x)),)
