@@ -10,4 +10,4 @@ notifications:
   email: true
 # uncomment the following lines to override the default test script
 after_success:
- - julia -e 'cd(Pkg.dir("WoodburyMatrices")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+ - julia -e 'using Pkg, WoodburyMatrices; cd(dirname(dirname(pathof(WoodburyMatrices)))); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
