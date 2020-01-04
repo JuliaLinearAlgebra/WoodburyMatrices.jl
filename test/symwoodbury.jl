@@ -1,20 +1,21 @@
 using WoodburyMatrices
 using Test
 
+@testset "SymWoodbury" begin
 seed!(123)
 n = 5
 
-for elty in (Float32, Float64, ComplexF32, ComplexF64, Int), AMat in (x -> Matrix(Diagonal(x)),)
+for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
 
     elty = Float64
 
-    a = rand(n); B = rand(n,2); D = rand(2,2); v = rand(n)
+    a = rand(n); B = rand(n,2); D = Symmetric(rand(2,2)); v = rand(n)
 
     if elty == Int
         v = rand(1:100, n)
         a = rand(1:100, n)
         B = rand(1:100, 2, n)
-        D = rand(1:100, 2, 2)
+        D = Symmetric(rand(1:100, 2, 2))
     else
         v = convert(Vector{elty}, v)
         a = convert(Vector{elty}, a)
@@ -23,9 +24,8 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int), AMat in (x -> Matri
     end
 
     ε = eps(abs2(float(one(elty))))
-    A = AMat(a)
+    A = Diagonal(a)
 
-    # Woodbury
     for W in (SymWoodbury(A, B, D), SymWoodbury(A, B[:,1][:], 2.))
 
         F = Matrix(W)
@@ -80,19 +80,19 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
 
     elty = Float64
 
-    a1 = rand(n); B1 = rand(n,2); D1 = rand(2,2); v = rand(n)
-    a2 = rand(n); B2 = rand(n,2); D2 = rand(2,2);
+    a1 = rand(n); B1 = rand(n,2); D1 = Symmetric(rand(2,2)); v = rand(n)
+    a2 = rand(n); B2 = rand(n,2); D2 = Symmetric(rand(2,2));
 
     if elty == Int
         v = rand(1:100, n)
 
         a1 = rand(1:100, n)
         B1 = rand(1:100, 2, n)
-        D1 = rand(1:100, 2, 2)
+        D1 = Symmetric(rand(1:100, 2, 2))
 
         a2 = rand(1:100, n)
         B2 = rand(1:100, 2, n)
-        D2 = rand(1:100, 2, 2)
+        D2 = Symmetric(rand(1:100, 2, 2))
     else
         v = convert(Vector{elty}, v)
 
@@ -107,9 +107,8 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
 
     ε = eps(abs2(float(one(elty))))
 
-    # Woodbury
-    A1 = Matrix(Diagonal((a1)))
-    A2 = Matrix(Diagonal((a2)))
+    A1 = Diagonal(a1)
+    A2 = Matrix(Diagonal(a2))
 
     W1 = SymWoodbury(A1, B1, D1)
     W2 = SymWoodbury(A2, B2, D2)
@@ -128,9 +127,9 @@ end
 
 # Sparse U and D
 
-A = Matrix(Diagonal((rand(n))))
+A = Diagonal((rand(n)))
 B = sprandn(n,2,1.)
-D = sprandn(2,2,1.)
+D = sprandn(2,2,1.); D = (D + D')/2
 W = SymWoodbury(A, B, D)
 v = randn(n)
 V = randn(n,1)
@@ -152,7 +151,33 @@ V = randn(n,1)
 @test (W*W)*V ≈ Matrix(W)*(Matrix(W)*V)
 @test (W*W')*V ≈ Matrix(W)*(Matrix(W)*V)
 
+@test Matrix(2*W) ≈ 2*Matrix(W)
+@test Matrix(W*2) ≈ 2*Matrix(W)
+R = Symmetric(rand(size(W)...))
+@test_broken Matrix(W + R) ≈ Matrix(W) + R   # need \(::LU, ::SparseMatrixCSC)
+@test_broken Matrix(R + W) ≈ Matrix(W) + R
+W = SymWoodbury(A, Matrix(B), D)
+@test Matrix(W + R) ≈ Matrix(W) + R
+@test Matrix(R + W) ≈ Matrix(W) + R
+
+# Factorization for A
+A = SymTridiagonal(rand(5).+2, rand(4))
+B = rand(5)
+D = 2
+x = rand(5)
+W1 = SymWoodbury(A, B, D)
+@test W1 \ x ≈ Matrix(W1) \ x
+for AA in (ldlt(A), cholesky(Matrix(A)), bunchkaufman(Matrix(A), true))
+    W2 = SymWoodbury(AA, B, D)
+    @test W2 \ x ≈ W1 \ x
+end
+
 # Mismatched sizes
 @test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(5,2),rand(2,3))
 @test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(5,2),rand(3,3))
 @test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(3),1.)
+
+# Asymmetric
+@test_throws ArgumentError SymWoodbury(rand(5,5),rand(5,2),rand(2,2))
+
+end # @testset "SymWoodbury"
