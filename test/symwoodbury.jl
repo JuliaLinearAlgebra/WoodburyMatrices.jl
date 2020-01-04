@@ -156,9 +156,11 @@ V = randn(n,1)
 R = Symmetric(rand(size(W)...))
 @test_broken Matrix(W + R) ≈ Matrix(W) + R   # need \(::LU, ::SparseMatrixCSC)
 @test_broken Matrix(R + W) ≈ Matrix(W) + R
-W = SymWoodbury(A, Matrix(B), D)
-@test Matrix(W + R) ≈ Matrix(W) + R
-@test Matrix(R + W) ≈ Matrix(W) + R
+Wm = SymWoodbury(A, Matrix(B), D)
+@test Matrix(Wm + R) ≈ Matrix(Wm) + R
+@test Matrix(R + Wm) ≈ Matrix(Wm) + R
+
+@test transpose(W)*v ≈ transpose(Matrix(W))*v
 
 # Factorization for A
 A = SymTridiagonal(rand(5).+2, rand(4))
@@ -171,6 +173,16 @@ for AA in (ldlt(A), cholesky(Matrix(A)), bunchkaufman(Matrix(A), true))
     W2 = SymWoodbury(AA, B, D)
     @test W2 \ x ≈ W1 \ x
 end
+A = Symmetric(rand(5, 5))
+W1 = SymWoodbury(A, B, D)
+@test W1 \ x ≈ Matrix(W1) \ x
+for AA in (bunchkaufman(Matrix(A), true),)
+    W2 = SymWoodbury(AA, B, D)
+    @test W2 \ x ≈ W1 \ x
+end
+A = sparse(A)
+W1 = SymWoodbury(A, B, D)
+@test W1 \ x ≈ Matrix(W1) \ x
 
 # Mismatched sizes
 @test_throws DimensionMismatch SymWoodbury(rand(5,5),rand(5,2),rand(2,3))
@@ -179,5 +191,11 @@ end
 
 # Asymmetric
 @test_throws ArgumentError SymWoodbury(rand(5,5),rand(5,2),rand(2,2))
+
+# Display
+iob = IOBuffer()
+show(iob, W)
+str = String(take!(iob))
+@test occursin("D:", str)
 
 end # @testset "SymWoodbury"

@@ -71,13 +71,13 @@ copy(W::Woodbury) = Woodbury(W.A, W.U, W.C, W.V)
 function inv(W::AbstractWoodbury)
     A′ = inv(W.A)
     U′ = W.A \ W.U
-    C′ = W.Cp
+    C′ = -W.Cp
     V′ = W.V*A′
     return Woodbury(A′, U′, C′, V′)
 end
 
 +(W::Woodbury, X::Woodbury)       = Woodbury(W.A + X.A, [W.U X.U],
-                                             cat(W.C, X.D; dims=(1,2)), [W.V; X.V])
+                                             cat(W.C, X.C; dims=(1,2)), [W.V; X.V])
 *(α::Real, W::Woodbury)           = Woodbury(α*W.A, W.U, α*W.C, W.V)
 +(W::Woodbury, M::AbstractMatrix) = Woodbury(W.A + M, W.U, W.C, W.V)
 

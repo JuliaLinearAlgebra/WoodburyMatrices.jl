@@ -37,21 +37,33 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     end
     ε = eps(abs2(float(one(elty))))
     T = Tridiagonal(dl, d, du)
-    @test size(T, 1) == n
-    @test size(T) == (n, n)
 
     # Matrix for A
     W = Woodbury(T, U, C, V)
+    @test size(W, 1) == n
+    @test size(W) == (n, n)
+    @test axes(W) === (Base.OneTo(n), Base.OneTo(n))
+    @test axes(W, 1) === Base.OneTo(n)
     F = Matrix(W)
+    @test F ≈ T + U*C*V
+    @test Array(W) == Matrix(W)
+    if elty <: Real
+        @test eltype(Matrix{Float64}(W)) === Float64
+        @test eltype(Array{Float64}(W)) === Float64
+    end
     @test W*v ≈ F*v
     iFv = F\v
     @test norm(W\v - iFv)/norm(iFv) <= n*cond(F)*ε # Revisit. Condition number is wrong
+    @test norm(inv(W)*v - iFv)/norm(iFv) <= n*cond(F)*ε
     @test abs((det(W) - det(F))/det(F)) <= n*cond(F)*ε # Revisit. Condition number is wrong
     iWv = similar(iFv)
     if elty != Int
         iWv = ldiv!(W, copy(v))
         @test iWv ≈ iFv
     end
+    @test W'*v ≈ F'*v
+    @test transpose(W)*v ≈ transpose(F)*v
+    @test (W + W) \ v ≈ (2*Matrix(W)) \ v
 
     # Factorization for A
     W = Woodbury(lu(T), U, C, V)
@@ -92,6 +104,8 @@ iFv = F\v
 # Display
 iob = IOBuffer()
 show(iob, W)
+str = String(take!(iob))
+@test occursin("C:", str)
 
 # Vector-valued U and scalar-valued C
 U = rand(n)
