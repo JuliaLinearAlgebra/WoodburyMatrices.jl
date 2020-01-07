@@ -16,23 +16,20 @@ creates a `Woodbury` matrix from the `A`, `U`, `C`, and `V` matrices representin
 `inv(inv(C) + V*(A\U))` will be calculated explicitly and hence needs to be representable with the available resources.
 (In many applications, this is a fairly small matrix.)
 
-There are only a few things you can do with a Woodbury matrix:
-- `full(W)` converts to its dense representation.
+Here are some of the things you can do with a Woodbury matrix:
+
+- `Matrix(W)` converts to its dense representation.
 - `W\b` solves the equation `W*x = b` for `x`.
+- `W*x` computes the product.
 - `det(W)` computes the determinant of `W`.
+- `α*W` and `W1 + W2`.
 
 It's worth emphasizing that `A` can be supplied as a factorization, which makes `W\b` and `det(W)` more efficient.
 
 ### SymWoodbury Matrices
+
 ```julia
 using WoodburyMatrices
 W = SymWoodbury(A, B, D)
 ```
-creates a `SymWoodbury` matrix, a symmetric version of a Woodbury matrix representing `A + B*D*B'`. In addition to the features above, `SymWoodbury` also supports various operations which are closed under this type. They are
-
-- Addition `W1 + W2`.
-- Squaring `W*W`.
-- Inversion `inv(W)`.
-- Multiplication by a scalar `2*W`.
-
-A slightly more stable, though computationally more costly version of inversion is given by `liftFactor`. `liftFactor(W)(x)` can be seen as a stabler version of `inv(W)*x`.
+creates a `SymWoodbury` matrix, a symmetric version of a Woodbury matrix representing `A + B*D*B'`. In addition to the features above, `SymWoodbury` also supports "squaring" `W*W`.
