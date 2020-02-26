@@ -65,6 +65,15 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     @test transpose(W)*v ≈ transpose(F)*v
     @test (W + W) \ v ≈ (2*Matrix(W)) \ v
 
+    # Diagonal matrix for A (lu(A) fails)
+    D = Diagonal(d)
+    W = Woodbury(D, U, C, V)
+    F = Matrix(W)
+    @test F ≈ D + U*C*V
+    @test W*v ≈ F*v
+    iFv = F\v
+    @test norm(W\v - iFv)/norm(iFv) <= n*cond(F)*ε # Revisit. Condition number is wrong
+
     # Factorization for A
     W = Woodbury(lu(T), U, C, V)
     F = Matrix(W)
