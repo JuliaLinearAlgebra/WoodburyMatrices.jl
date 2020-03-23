@@ -56,10 +56,13 @@ end
 
 # Division
 
-function \(W::AbstractWoodbury, R::AbstractMatrix)
+function _ldiv(W::AbstractWoodbury, R::AbstractMatrix)
     AinvR = W.A\R
     return AinvR - W.A\(W.U*(W.Cp*(W.V*AinvR)))
 end
+
+\(W::AbstractWoodbury, R::AbstractMatrix) = _ldiv(W, R)
+\(W::AbstractWoodbury, D::Diagonal) = _ldiv(W, D)
 
 ldiv!(W::AbstractWoodbury, B::AbstractVector) = ldiv!(B, W, B)
 

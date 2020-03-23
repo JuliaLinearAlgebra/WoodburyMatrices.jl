@@ -74,6 +74,10 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     iFv = F\v
     @test norm(W\v - iFv)/norm(iFv) <= n*cond(F)*ε # Revisit. Condition number is wrong
 
+    # Check division with diagonal matrix
+    iFvmat = F\Diagonal(v)
+    @test norm(W\Diagonal(v) - iFvmat)/norm(iFvmat) <= n*cond(F)*ε # Revisit. Condition number is wrong
+
     # Factorization for A
     W = Woodbury(lu(T), U, C, V)
     F = Matrix(W)
