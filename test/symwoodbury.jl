@@ -132,6 +132,7 @@ B = sprandn(n,2,1.)
 D = sprandn(2,2,1.); D = (D + D')/2
 W = SymWoodbury(A, B, D)
 v = randn(n)
+vdiag = Diagonal(v)
 V = randn(n,1)
 
 @test size(W) == (n,n)
@@ -144,6 +145,10 @@ V = randn(n,1)
 @test (W*W)*v ≈ Matrix(W)*(Matrix(W)*v)
 @test (W*W')*v ≈ Matrix(W)*(Matrix(W)*v)
 @test liftFactor(W)(v) ≈ inv(W)*v
+
+@test inv(W)*vdiag ≈ W\vdiag
+@test W\vdiag ≈ W\Matrix(vdiag)
+@test inv(W)*vdiag ≈ inv(Matrix(W))*vdiag
 
 @test inv(W)*V ≈ inv(Matrix(W))*V
 @test (2*W)*V ≈ 2*(W*V)
