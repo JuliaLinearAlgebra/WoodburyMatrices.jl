@@ -1,7 +1,7 @@
 module WoodburyMatrices
 
 using LinearAlgebra
-import LinearAlgebra: det, ldiv!, mul!, adjoint, transpose
+import LinearAlgebra: det, logdet, logabsdet, ldiv!, mul!, adjoint, transpose
 import Base: +, *, \, inv, convert, copy, show, similar, axes, size
 using SparseArrays
 
@@ -88,7 +88,16 @@ end
 _ldiv!(dest, W, A, B) = _ldiv!(dest, W, lu(A), B)
 
 det(W::AbstractWoodbury) = det(W.A)*det(W.C)/det(W.Cp)
-
+logdet(W::AbstractWoodbury) = logdet(W.A) + logdet(W.C) - logdet(W.Cp)
+function logabsdet(W::AbstractWoodbury)
+    lad_A = logabsdet(W.A)
+    lad_C = logabsdet(W.C)
+    lad_Cp = logabsdet(W.Cp)
+    lad = lad_A[1] + lad_C[1] - lad_Cp[1]
+    s = lad_A[2] * lad_C[2] / lad_Cp[2]
+    return lad, s
+end
+end
 *(W::AbstractWoodbury, α::Real) = α*W
 +(M::AbstractMatrix, W::AbstractWoodbury) = W + M
 
