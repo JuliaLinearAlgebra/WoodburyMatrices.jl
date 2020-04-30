@@ -97,7 +97,7 @@ function logabsdet(W::AbstractWoodbury)
     s = lad_A[2] * lad_C[2] / lad_Cp[2]
     return lad, s
 end
-end
+
 *(W::AbstractWoodbury, α::Real) = α*W
 +(M::AbstractMatrix, W::AbstractWoodbury) = W + M
 
