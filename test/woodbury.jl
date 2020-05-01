@@ -65,13 +65,6 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     @test transpose(W)*v ≈ transpose(F)*v
     @test (W + W) \ v ≈ (2*Matrix(W)) \ v
 
-    # logdet
-    # make sure all matrices are PSD because I don't want complex numbers
-    randpsd(S) = randn(S) |> Q -> Q * Q'
-    W = Woodbury(T, randpsd(size(T)), randpsd(size(T)), randpsd(size(T)))
-    @test logdet(W) ≈ log(det(W)) ≈ logdet(Array(W))
-    @test all(logabsdet(W) .≈ logabsdet(Array(W)))
-
     # Diagonal matrix for A (lu(A) fails)
     D = Diagonal(d)
     W = Woodbury(D, U, C, V)
@@ -168,5 +161,12 @@ for i in 1:5  # repeat 5 times
 
     @test maximum(abs,out - by_hand) == 0.0
 end
+
+# logdet
+# make sure all matrices are PSD because I don't want complex numbers
+randpsd(S) = randn(S, S) |> Q -> Q * Q'
+W = Woodbury([randpsd(10) for _ in 1:4]...)
+@test logdet(W) ≈ log(det(W)) ≈ logdet(Array(W))
+@test all(logabsdet(W) .≈ logabsdet(Array(W)))
 
 end  # @testset "Woodbury"
