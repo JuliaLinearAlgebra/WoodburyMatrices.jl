@@ -69,13 +69,8 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     # make sure all matrices are PSD because I don't want complex numbers
     randpsd(S) = randn(S) |> Q -> Q * Q'
     W = Woodbury(T, randpsd(size(T)), randpsd(size(T)), randpsd(size(T)))
-    @test logdet(W) ≈ logdet(W.A) + logdet(W.C) - logdet(W.Cp)
-    @test logdet(W) ≈ log(det(W))
-    lad, s = logabsdet(W)
-    @test lad ≈ logabsdet(W.A)[1] + logabsdet(W.C)[1] - logabsdet(W.Cp)[1]
-    @test s == logabsdet(W.A)[2] * logabsdet(W.C)[2] / logabsdet(W.Cp)[2]
-    @test s == sign(det(W.A)) * sign(det(W.C)) / sign(det(W.Cp))
-    @test lad ≈ log(abs(det(W)))
+    @test logdet(W) ≈ log(det(W)) ≈ logdet(Array(W))
+    @test all(logabsdet(W) .≈ logabsdet(Array(W)))
 
     # Diagonal matrix for A (lu(A) fails)
     D = Diagonal(d)
