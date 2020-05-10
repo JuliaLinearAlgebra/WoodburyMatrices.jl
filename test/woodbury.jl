@@ -164,8 +164,7 @@ end
 
 # logdet
 # make sure all matrices are PSD because I don't want complex numbers
-randpsd(S) = randn(S, S) |> Q -> Q * Q'
-W = Woodbury([randpsd(10) for _ in 1:4]...)
+W = Woodbury([randpsd(50) for _ in 1:4]...)
 @test logdet(W) ≈ log(det(W)) ≈ logdet(Array(W))
 @test all(logabsdet(W) .≈ logabsdet(Array(W)))
 
