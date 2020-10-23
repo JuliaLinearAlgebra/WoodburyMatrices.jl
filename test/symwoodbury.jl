@@ -203,4 +203,10 @@ show(iob, W)
 str = String(take!(iob))
 @test occursin("D:", str)
 
+# logdet
+# make sure all matrices are PSD because I don't want complex numbers
+W = SymWoodbury([randpsd(50) for _ in 1:3]...)
+@test logdet(W) ≈ log(det(W)) ≈ logdet(Array(W))
+@test all(logabsdet(W) .≈ logabsdet(Array(W)))
+
 end # @testset "SymWoodbury"

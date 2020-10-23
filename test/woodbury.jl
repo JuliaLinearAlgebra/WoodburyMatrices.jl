@@ -162,4 +162,10 @@ for i in 1:5  # repeat 5 times
     @test maximum(abs,out - by_hand) == 0.0
 end
 
+# logdet
+# make sure all matrices are PSD because I don't want complex numbers
+W = Woodbury([randpsd(50) for _ in 1:4]...)
+@test logdet(W) ≈ log(det(W)) ≈ logdet(Array(W))
+@test all(logabsdet(W) .≈ logabsdet(Array(W)))
+
 end  # @testset "Woodbury"
