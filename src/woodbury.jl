@@ -76,6 +76,17 @@ function inv(W::AbstractWoodbury)
     return Woodbury(A′, U′, C′, V′)
 end
 
+# multiplying everything out would be O(m^2 k + m k^2) operations
+# best I could think of was O(m^2 k) operations
+function diag(W::AbstractWoodbury)
+    d = diag(W.A)
+    (k,m) = size(W.U)
+    for i = 1:k
+        d[i] += W.U[i,:]' * W.C * W.V[:,i]
+    end
+    return d
+end
+
 +(W::Woodbury, X::Woodbury)       = Woodbury(W.A + X.A, [W.U X.U],
                                              cat(W.C, X.C; dims=(1,2)), [W.V; X.V])
 *(α::Real, W::Woodbury)           = Woodbury(α*W.A, W.U, α*W.C, W.V)
