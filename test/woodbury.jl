@@ -90,6 +90,8 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
         iWv = ldiv!(W, copy(v))
         @test iWv ≈ iFv
     end
+    @test axes(W, 1) == axes(T, 1)
+    @test axes(W) == axes(T)
 end
 
 # Sparse U and V
