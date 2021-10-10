@@ -159,8 +159,15 @@ V = randn(n,1)
 @test Matrix(2*W) ≈ 2*Matrix(W)
 @test Matrix(W*2) ≈ 2*Matrix(W)
 R = Symmetric(rand(size(W)...))
-@test_broken Matrix(W + R) ≈ Matrix(W) + R   # need \(::LU, ::SparseMatrixCSC)
-@test_broken Matrix(R + W) ≈ Matrix(W) + R
+# Not sure when this got fixed, but check that failures are for a "known" reason
+canadd = try (W + R; true;) catch err; (@test err isa MethodError && err.f == ldiv!; false;) end
+if canadd
+    @test Matrix(W + R) ≈ Matrix(W) + R
+    @test Matrix(R + W) ≈ Matrix(W) + R
+else
+    @test_broken Matrix(W + R) ≈ Matrix(W) + R
+    @test_broken Matrix(R + W) ≈ Matrix(W) + R
+end
 Wm = SymWoodbury(A, Matrix(B), D)
 @test Matrix(Wm + R) ≈ Matrix(Wm) + R
 @test Matrix(R + Wm) ≈ Matrix(Wm) + R
