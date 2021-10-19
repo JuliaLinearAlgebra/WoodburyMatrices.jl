@@ -78,14 +78,7 @@ end
 
 # multiplying everything out would be O(m^2 k + m k^2) operations
 # best I could think of was O(m^2 k) operations
-function diag(W::AbstractWoodbury)
-    d = diag(W.A)
-    (k,m) = size(W.U)
-    for i = 1:k
-        d[i] += W.U[i,:]' * W.C * W.V[:,i]
-    end
-    return d
-end
+diag(W::AbstractWoodbury) = diag(W.A) + vec(sum(W.U .* (W.C * W.V)', dims=2))
 
 +(W::Woodbury, X::Woodbury)       = Woodbury(W.A + X.A, [W.U X.U],
                                              cat(W.C, X.C; dims=(1,2)), [W.V; X.V])
