@@ -55,6 +55,7 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     iFv = F\v
     @test norm(W\v - iFv)/norm(iFv) <= n*cond(F)*ε # Revisit. Condition number is wrong
     @test norm(inv(W)*v - iFv)/norm(iFv) <= n*cond(F)*ε
+    @test norm(diag(W) - diag(F)) <= n*cond(F)*ε # haven't thought about this error bound
     @test abs((det(W) - det(F))/det(F)) <= n*cond(F)*ε # Revisit. Condition number is wrong
     iWv = similar(iFv)
     if elty != Int
