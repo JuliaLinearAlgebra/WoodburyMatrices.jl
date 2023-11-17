@@ -91,11 +91,9 @@ inv(O::SymWoodbury{T,AType,BType,DType}) where {T<:Any, AType<:Any, BType<:Any, 
 inv(O::SymWoodbury{T,AType,BType,DType}) where {T<:Any, AType<:Any, BType<:Any, DType<:SparseMatrixCSC} =
   calc_inv(O.A, O.B, Matrix(O.D))
 
-_ldiv!(dest, W::SymWoodbury, A::AbstractMatrix, B) = _ldiv!(dest, W, defaultfactor(A), B)
-
-defaultfactor(A) = bunchkaufman(A, true)
-defaultfactor(A::SymTridiagonal) = ldlt(A)
-defaultfactor(A::SparseMatrixCSC) = lu(A)
+defaultfactor(::SymWoodbury, A) = bunchkaufman(A, true)
+defaultfactor(::SymWoodbury, A::SymTridiagonal) = ldlt(A)
+defaultfactor(::SymWoodbury, A::SparseMatrixCSC) = lu(A)
 
 """
     partialInv(O)

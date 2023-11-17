@@ -64,6 +64,7 @@ function _ldiv(W::AbstractWoodbury, R::AbstractMatrix)
 end
 
 \(W::AbstractWoodbury, R::AbstractMatrix) = _ldiv(W, R)
+\(::AbstractWoodbury{T}, ::Array{Complex{T}, 2}) where T<:Union{Float32, Float64} = _ldiv(W, R)  # ambiguity resolution
 \(W::AbstractWoodbury, D::Diagonal) = _ldiv(W, D)
 
 ldiv!(W::AbstractWoodbury, B::AbstractVector) = ldiv!(B, W, B)
@@ -76,7 +77,7 @@ function ldiv!(dest::AbstractVector, W::AbstractWoodbury, B::AbstractVector)
     return dest
 end
 
-function _ldiv!(dest, W, A::Union{Factorization,Diagonal}, B)
+function _ldiv!(dest, W::AbstractWoodbury, A::Union{Factorization,Diagonal}, B)
     myldiv!(W.tmpN1, A, B)
     mul!(W.tmpk1, W.V, W.tmpN1)
     mul!(W.tmpk2, W.Cp, W.tmpk1)
@@ -87,7 +88,9 @@ function _ldiv!(dest, W, A::Union{Factorization,Diagonal}, B)
     end
     return dest
 end
-_ldiv!(dest, W, A, B) = _ldiv!(dest, W, lu(A), B)
+_ldiv!(dest, W, A, B) = _ldiv!(dest, W, defaultfactor(W, A), B)
+
+defaultfactor(::AbstractWoodbury, A) = lu(A)
 
 det(W::AbstractWoodbury) = det(W.A)*det(W.C)/det(W.Cp)
 logdet(W::AbstractWoodbury) = logdet(W.A) + logdet(W.C) - logdet(W.Cp)
