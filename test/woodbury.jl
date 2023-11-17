@@ -65,6 +65,11 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     @test W'*v ≈ F'*v
     @test transpose(W)*v ≈ transpose(F)*v
     @test (W + W) \ v ≈ (2*Matrix(W)) \ v
+    # Test a method used for ambiguity resolution
+    if elty<:Union{Float32, Float64}
+        R = randn(Complex{elty}, n, 2)
+        @test W \ R ≈ Matrix(W) \ R
+    end
 
     # Diagonal matrix for A (lu(A) fails)
     D = Diagonal(d)
