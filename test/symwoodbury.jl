@@ -216,4 +216,15 @@ W = SymWoodbury([randpsd(50) for _ in 1:3]...)
 @test logdet(W) ≈ log(det(W)) ≈ logdet(Array(W))
 @test all(logabsdet(W) .≈ logabsdet(Array(W)))
 
+@testset "Diagonal (issue #35)" begin
+    A = Diagonal( Float64[1,2,3,4] )
+    V = [5  6  7  8;
+         9 10 11 12]
+    U = V'
+    D = Matrix( I, 2, 2 )
+
+    W = SymWoodbury( A, U, D )
+    @test W \ [13, 14, 15, 16] ≈ Matrix(W) \ [13, 14, 15, 16]
+end
+
 end # @testset "SymWoodbury"
