@@ -41,16 +41,19 @@ SparseArrays.sparse(W::AbstractWoodbury) = sparse(Matrix(W))
 
 function *(W::AbstractWoodbury, x::AbstractVector)
     # A reduced-allocation optimization (using temp storage for the multiplications)
-    mul!(W.tmpN1, W.A, x)
-    mul!(W.tmpk1, W.V, x)
-    mul!(W.tmpk2, W.C, W.tmpk1)
-    mul!(W.tmpN2, W.U, W.tmpk2)
-    return W.tmpN1 + W.tmpN2
+    if W.tmpN1 !== nothing
+        mul!(W.tmpN1, W.A, x)
+        mul!(W.tmpk1, W.V, x)
+        mul!(W.tmpk2, W.C, W.tmpk1)
+        mul!(W.tmpN2, W.U, W.tmpk2)
+        return W.tmpN1 + W.tmpN2
+    end
+    return W.A * x + W.U * (W.C * (W.V * x))
 end
 
 # Division
 
-function _ldiv(W::AbstractWoodbury, R::AbstractMatrix)
+function _ldiv(W::AbstractWoodbury, R::AbstractVecOrMat)
     AinvR = W.A\R
     return AinvR - W.A\(W.U*(W.Cp*(W.V*AinvR)))
 end
@@ -70,13 +73,17 @@ function ldiv!(dest::AbstractVector, W::AbstractWoodbury, B::AbstractVector)
 end
 
 function _ldiv!(dest, W::AbstractWoodbury, A::Union{Factorization,Diagonal}, B)
-    ldiv!(W.tmpN1, A, B)
-    mul!(W.tmpk1, W.V, W.tmpN1)
-    mul!(W.tmpk2, W.Cp, W.tmpk1)
-    mul!(W.tmpN2, W.U, W.tmpk2)
-    ldiv!(A, W.tmpN2)
-    for i = 1:length(W.tmpN2)
-        @inbounds dest[i] = W.tmpN1[i] - W.tmpN2[i]
+    if W.tmpN1 !== nothing
+        ldiv!(W.tmpN1, A, B)
+        mul!(W.tmpk1, W.V, W.tmpN1)
+        mul!(W.tmpk2, W.Cp, W.tmpk1)
+        mul!(W.tmpN2, W.U, W.tmpk2)
+        ldiv!(A, W.tmpN2)
+        for i in eachindex(W.tmpN2)
+            dest[i] = W.tmpN1[i] - W.tmpN2[i]
+        end
+    else
+        copyto!(dest, _ldiv(W, B))
     end
     return dest
 end

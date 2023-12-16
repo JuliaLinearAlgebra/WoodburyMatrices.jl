@@ -3,14 +3,17 @@ struct SymWoodbury{T,AType,BType,DType,DpType} <: AbstractWoodbury{T}
     B::BType
     D::DType
     Dp::DpType
-    tmpN1::Vector{T}
-    tmpN2::Vector{T}
-    tmpk1::Vector{T}
-    tmpk2::Vector{T}
+    tmpN1::Union{Vector{T}, Nothing}
+    tmpN2::Union{Vector{T}, Nothing}
+    tmpk1::Union{Vector{T}, Nothing}
+    tmpk2::Union{Vector{T}, Nothing}
+
+    SymWoodbury{T}(A, B, D, Dp, tmpN1, tmpN2, tmpk1, tmpk2) where {T} =
+        new{T,typeof(A),typeof(B),typeof(D),typeof(Dp)}(A, B, D, Dp, tmpN1, tmpN2, tmpk1, tmpk2)
 end
 
 """
-    W = SymWoodbury(A, B, D)
+    W = SymWoodbury(A, B, D; allocatetmp::Bool=true)
 
 Represent a matrix of the form `W = A + BDBᵀ`, where `A` and `D` are symmetric.
 Equations `Wx = b` will be solved using the
@@ -23,9 +26,9 @@ semidefinite matrix).
 This checks that `A` is symmetric; you can elide the check by passing a `Symmetric` matrix
 or factorization.
 
-See also [Woodbury](@ref).
+See also [Woodbury](@ref), where `allocatetmp` is explained.
 """
-function SymWoodbury(A, B::AbstractVecOrMat, D)
+function SymWoodbury(A, B::AbstractVecOrMat, D; allocatetmp::Bool=true)
     @noinline throwdmm(B, D, A) = throw(DimensionMismatch("Sizes of B ($(size(B))) and/or D ($(size(D))) are inconsistent with A ($(size(A)))"))
 
     n = size(A, 1)
@@ -40,12 +43,16 @@ function SymWoodbury(A, B::AbstractVecOrMat, D)
     Dp = safeinv(safeinv(D) .+ B'*(A\B))
     # temporary space for allocation-free solver (vector RHS only)
     T = typeof(float(zero(eltype(A)) * zero(eltype(B)) * zero(eltype(D))))
-    tmpN1 = Vector{T}(undef, n)
-    tmpN2 = Vector{T}(undef, n)
-    tmpk1 = Vector{T}(undef, k)
-    tmpk2 = Vector{T}(undef, k)
+    if allocatetmp
+        tmpN1 = Vector{T}(undef, n)
+        tmpN2 = Vector{T}(undef, n)
+        tmpk1 = Vector{T}(undef, k)
+        tmpk2 = Vector{T}(undef, k)
+    else
+        tmpN1 = tmpN2 = tmpk1 = tmpk2 = nothing
+    end
 
-    SymWoodbury(A, B, D, Dp, tmpN1, tmpN2, tmpk1, tmpk2)
+    SymWoodbury{T}(A, B, D, Dp, tmpN1, tmpN2, tmpk1, tmpk2)
 end
 
 convert(::Type{W}, O::SymWoodbury) where {W<:Woodbury} = Woodbury(O.A, O.B, O.D, O.B')

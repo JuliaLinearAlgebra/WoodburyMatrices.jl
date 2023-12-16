@@ -26,7 +26,7 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     ε = eps(abs2(float(one(elty))))
     A = Diagonal(a)
 
-    for W in (SymWoodbury(A, B, D), SymWoodbury(A, B[:,1][:], 2.))
+    for W in (SymWoodbury(A, B, D), SymWoodbury(A, B, D; allocatetmp=false), SymWoodbury(A, B[:,1][:], 2.))
 
         @test issymmetric(W)
         F = Matrix(W)

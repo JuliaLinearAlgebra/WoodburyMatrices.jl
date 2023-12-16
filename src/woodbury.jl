@@ -4,14 +4,17 @@ struct Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractWoodbury{T}
     C::CType
     Cp::CpType
     V::VType
-    tmpN1::Vector{T}
-    tmpN2::Vector{T}
-    tmpk1::Vector{T}
-    tmpk2::Vector{T}
+    tmpN1::Union{Vector{T}, Nothing}
+    tmpN2::Union{Vector{T}, Nothing}
+    tmpk1::Union{Vector{T}, Nothing}
+    tmpk2::Union{Vector{T}, Nothing}
+
+    Woodbury{T}(A, U, C, Cp, V, tmpN1, tmpN2, tmpk1, tmpk2) where {T} =
+        new{T,typeof(A),typeof(U),typeof(V),typeof(C),typeof(Cp)}(A, U, C, Cp, V, tmpN1, tmpN2, tmpk1, tmpk2)
 end
 
 """
-    W = Woodbury(A, U, C, V)
+    W = Woodbury(A, U, C, V; allocatetmp::Bool=true)
 
 Represent a matrix `W = A + UCV`.
 Equations `Wx = b` will be solved using the
@@ -20,9 +23,18 @@ Equations `Wx = b` will be solved using the
 If your main goal is to solve equations, it's often advantageous to supply
 `A` as a factorization (e.g., `Woodbury(lu(A), U, C, V)`).
 
+If `allocatetmp` is true, temporary storage used for intermediate steps in
+multiplication and division will be allocated.
+
+!!! warning
+    If you'll use the same `W` in multiple threads, you should set `allocatetmp=false`
+    or risk data races.
+
+
 See also [SymWoodbury](@ref).
+
 """
-function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix)
+function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix; allocatetmp::Bool=true)
     @noinline throwdmm1(U, V, A) = throw(DimensionMismatch("Sizes of U ($(size(U))) and/or V ($(size(V))) are inconsistent with A ($(size(A)))"))
     @noinline throwdmm2(k) = throw(DimensionMismatch("C should be $(k)x$(k)"))
 
@@ -39,12 +51,16 @@ function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix)
     Cp = safeinv(safeinv(C) .+ V*(A\U))
     # temporary space for allocation-free solver (vector RHS only)
     T = typeof(float(zero(eltype(A)) * zero(eltype(U)) * zero(eltype(C)) * zero(eltype(V))))
-    tmpN1 = Vector{T}(undef, N)
-    tmpN2 = Vector{T}(undef, N)
-    tmpk1 = Vector{T}(undef, k)
-    tmpk2 = Vector{T}(undef, k)
+    if allocatetmp
+        tmpN1 = Vector{T}(undef, N)
+        tmpN2 = Vector{T}(undef, N)
+        tmpk1 = Vector{T}(undef, k)
+        tmpk2 = Vector{T}(undef, k)
+    else
+        tmpN1 = tmpN2 = tmpk1 = tmpk2 = nothing
+    end
 
-    Woodbury(A, U, C, Cp, V, tmpN1, tmpN2, tmpk1, tmpk2)
+    Woodbury{T}(A, U, C, Cp, V, tmpN1, tmpN2, tmpk1, tmpk2)
 end
 
 Woodbury(A, U::AbstractVector{T}, C, V::AbstractMatrix{T}) where {T} = Woodbury(A, reshape(U, length(U), 1), C, V)

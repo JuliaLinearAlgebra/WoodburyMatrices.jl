@@ -33,3 +33,11 @@ using WoodburyMatrices
 W = SymWoodbury(A, B, D)
 ```
 creates a `SymWoodbury` matrix, a symmetric version of a Woodbury matrix representing `A + B*D*B'`. In addition to the features above, `SymWoodbury` also supports "squaring" `W*W`.
+
+## Efficiency and thread-safety
+
+(Sym)Woodbury allocates internal temporary storage for intermediate results in `W*v` and `W\v` where `v` is a vector.
+This eliminates memory allocation for these common operations.
+
+However, using the same `W` across multiple threads can lead to race conditions. In such cases, construct `W` with
+the keyword option `allocatetmp=false` to disable this optimization.
