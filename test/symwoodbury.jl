@@ -66,7 +66,6 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
         if elty != Int
             @test inv(W)*v ≈ inv(Matrix(W))*v
             @test W\v ≈ inv(Matrix(W))*v
-            @test liftFactor(W)(v) ≈ inv(W)*v
             @test WoodburyMatrices.partialInv(W)[1] ≈ inv(W).B
             @test WoodburyMatrices.partialInv(W)[2] ≈ inv(W).D
             @test det(W) ≈ det(Matrix(W))
@@ -145,7 +144,6 @@ V = randn(n,1)
 @test (W'W)*v ≈ Matrix(W)*(Matrix(W)*v)
 @test (W*W)*v ≈ Matrix(W)*(Matrix(W)*v)
 @test (W*W')*v ≈ Matrix(W)*(Matrix(W)*v)
-@test liftFactor(W)(v) ≈ inv(W)*v
 
 @test inv(W)*vdiag ≈ W\vdiag
 @test W\vdiag ≈ W\Matrix(vdiag)

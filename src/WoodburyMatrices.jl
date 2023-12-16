@@ -15,7 +15,6 @@ safeinv(A::SparseMatrixCSC) = safeinv(Matrix(A))
 include("woodbury.jl")
 include("symwoodbury.jl")
 include("sparsefactors.jl")
-include("deprecated.jl")
 
 # Traits and algorithms expressible in terms of AbstractWoodbury
 
