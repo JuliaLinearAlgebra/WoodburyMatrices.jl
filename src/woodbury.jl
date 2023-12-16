@@ -87,3 +87,15 @@ diag(W::AbstractWoodbury) = diag(W.A) + vec(sum(W.U .* (W.C * W.V)', dims=2))
 
 adjoint(W::Woodbury) = Woodbury(adjoint(W.A), adjoint(W.V), adjoint(W.C), adjoint(W.U))
 transpose(W::Woodbury) = Woodbury(transpose(W.A), transpose(W.V), transpose(W.C), transpose(W.U))
+
+# We'd like to implement `issymmetric` as
+#     issymmetric(W::Woodbury) = issymmetric(W.A) && issymmetric(W.C) && W.U == W.V'
+# but this only represents a quick check in favorable cases, as it is possible for A + UCV'
+# to be symmetric even if the pieces are not.
+# (Example: A + U*C*(-U') = A - U*C*U'.)
+# Thus we have to fall back to the dense implementation.
+# See `SymWoodbury` for a guaranteed-symmetric version.
+function issymmetric(W::Woodbury)
+    issymmetric(W.A) && issymmetric(W.C) && W.U == W.V' && return true
+    return issymmetric(Matrix(W))
+end

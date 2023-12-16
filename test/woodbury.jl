@@ -71,6 +71,13 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
         @test W \ R ≈ Matrix(W) \ R
     end
 
+    Tsym = SymTridiagonal(d, du)
+    Csym = [1 2; 2 3]
+    @test !issymmetric(Woodbury(T, U, Csym, U'))
+    @test !issymmetric(Woodbury(Tsym, U, C, U'))
+    @test !issymmetric(Woodbury(Tsym, U, Csym, V))
+    @test  issymmetric(Woodbury(Tsym, U, Csym, U'))
+
     # Diagonal matrix for A (lu(A) fails)
     D = Diagonal(d)
     W = Woodbury(D, U, C, V)
