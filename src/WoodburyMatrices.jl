@@ -39,16 +39,23 @@ SparseArrays.sparse(W::AbstractWoodbury) = sparse(Matrix(W))
 
 *(W::AbstractWoodbury, B::AbstractMatrix)=W.A*B + W.U*(W.C*(W.V*B))
 
-function *(W::AbstractWoodbury, x::AbstractVector)
+function *(W::AbstractWoodbury{T}, x::AbstractVector{S}) where {T,S}
+    TS = Base.promote_op(LinearAlgebra.matprod, T, S)
+    mul!(similar(x, TS, size(W,1)), W, x)
+end
+
+function mul!(dest, W::AbstractWoodbury, x::AbstractVector)
     # A reduced-allocation optimization (using temp storage for the multiplications)
     if W.tmpN1 !== nothing
         mul!(W.tmpN1, W.A, x)
         mul!(W.tmpk1, W.V, x)
         mul!(W.tmpk2, W.C, W.tmpk1)
         mul!(W.tmpN2, W.U, W.tmpk2)
-        return W.tmpN1 + W.tmpN2
+        dest .= W.tmpN1 .+ W.tmpN2
+    else
+        dest .= W.A * x + W.U * (W.C * (W.V * x))
     end
-    return W.A * x + W.U * (W.C * (W.V * x))
+    return dest
 end
 
 # Division
