@@ -98,10 +98,23 @@ _ldiv!(dest, W, A, B) = _ldiv!(dest, W, defaultfactor(W, A), B)
 
 defaultfactor(::AbstractWoodbury, A) = lu(A)
 
-det(W::AbstractWoodbury) = det(W.A)*det(W.C)/det(W.Cp)
-logdet(W::AbstractWoodbury) = logdet(W.A) + logdet(W.C) - logdet(W.Cp)
+function det(W::AbstractWoodbury)
+    ret = det(W.A)
+    if !isempty(W.C)
+        ret *= det(W.C)/det(W.Cp)
+    end
+    return ret
+end
+function logdet(W::AbstractWoodbury)
+    ret = logdet(W.A)
+    if !isempty(W.C)
+        ret += logdet(W.C) - logdet(W.Cp)
+    end
+    return ret
+end
 function logabsdet(W::AbstractWoodbury)
     lad_A = logabsdet(W.A)
+    isempty(W.C) && return lad_A
     lad_C = logabsdet(W.C)
     lad_Cp = logabsdet(W.Cp)
     lad = lad_A[1] + lad_C[1] - lad_Cp[1]

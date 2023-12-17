@@ -226,4 +226,16 @@ W = SymWoodbury([randpsd(50) for _ in 1:3]...)
     @test W \ [13, 14, 15, 16] ≈ Matrix(W) \ [13, 14, 15, 16]
 end
 
+@testset "Empty B" begin
+    A = Diagonal( Float64[1,2,3,4] )
+    B = Matrix{Float64}(undef, 4, 0)
+    D = Diagonal(Float64[])
+
+    W = SymWoodbury( A, B, D)
+    @test W \ [13, 14, 15, 16] ≈ Matrix(W) \ [13, 14, 15, 16]
+    @test det(W) ≈ det(Matrix(W))
+    @test logdet(W) ≈ logdet(Matrix(W))
+    @test all(logabsdet(W) .≈ logabsdet(Matrix(W)))
+end
+
 end # @testset "SymWoodbury"
