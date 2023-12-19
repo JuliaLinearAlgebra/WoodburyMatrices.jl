@@ -151,6 +151,8 @@ Base.getindex(O::SymWoodbury, I::UnitRange, I2::UnitRange) =
 adjoint(O::SymWoodbury{T}) where T<:Real = O   # it's Hermitian
 transpose(O::SymWoodbury) = O
 
+issymmetric(::SymWoodbury) = true
+
 function show(io::IO, W::SymWoodbury)
     println(io, "Symmetric Woodbury factorization:\nA:")
     show(io, MIME("text/plain"), W.A)

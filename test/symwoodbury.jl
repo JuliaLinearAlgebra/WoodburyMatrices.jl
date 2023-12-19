@@ -28,6 +28,7 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
 
     for W in (SymWoodbury(A, B, D), SymWoodbury(A, B[:,1][:], 2.))
 
+        @test issymmetric(W)
         F = Matrix(W)
         @test (2*W)*v ≈ 2*(W*v)
         @test W'*v ≈ W*v

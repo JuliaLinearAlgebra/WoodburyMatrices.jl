@@ -1,7 +1,7 @@
 module WoodburyMatrices
 
 using LinearAlgebra
-import LinearAlgebra: det, logdet, logabsdet, ldiv!, mul!, adjoint, transpose, diag
+import LinearAlgebra: det, logdet, logabsdet, ldiv!, mul!, adjoint, transpose, diag, issymmetric
 import Base: +, *, \, inv, convert, copy, show, similar, axes, size
 using SparseArrays
 
