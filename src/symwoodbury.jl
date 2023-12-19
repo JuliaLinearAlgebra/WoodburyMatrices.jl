@@ -160,13 +160,23 @@ transpose(O::SymWoodbury) = O
 
 issymmetric(::SymWoodbury) = true
 
-function show(io::IO, W::SymWoodbury)
+function show(io::IO, mime::MIME"text/plain", W::SymWoodbury)
     println(io, "Symmetric Woodbury factorization:\nA:")
-    show(io, MIME("text/plain"), W.A)
+    show(io, mime, W.A)
     print(io, "\nB:\n")
     Base.print_matrix(IOContext(io,:compact=>true), W.B)
     print(io, "\nD: ", W.D)
 end
+function show(io::IO, W::SymWoodbury)
+    print(io, "SymWoodbury{$(eltype(W))}(A=")
+    show(io, W.A)
+    print(io, ", B=")
+    show(io, W.B)
+    print(io, ", D=")
+    show(io, W.D)
+    print(io, ")")
+end
+
 
 function symmetrize!(A::AbstractMatrix)
     axs = axes(A)
