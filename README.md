@@ -36,8 +36,7 @@ creates a `SymWoodbury` matrix, a symmetric version of a Woodbury matrix represe
 
 ## Efficiency and thread-safety
 
-(Sym)Woodbury allocates internal temporary storage for intermediate results in `W*v` and `W\v` where `v` is a vector.
+If passed the keyword argument `allocatetmp=true`, (Sym)Woodbury allocates internal temporary storage for intermediate results in `W*v` and `W\v` where `v` is a vector.
 This eliminates memory allocation for these common operations.
 
-However, using the same `W` across multiple threads can lead to race conditions. In such cases, construct `W` with
-the keyword option `allocatetmp=false` to disable this optimization.
+However, using the same `W` across multiple threads can lead to race conditions. Hence, this optimization is opt-in and should only be used if you know it is safe.

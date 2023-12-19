@@ -14,7 +14,7 @@ struct Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractWoodbury{T}
 end
 
 """
-    W = Woodbury(A, U, C, V; allocatetmp::Bool=true)
+    W = Woodbury(A, U, C, V; allocatetmp::Bool=false)
 
 Represent a matrix `W = A + UCV`.
 Equations `Wx = b` will be solved using the
@@ -27,14 +27,14 @@ If `allocatetmp` is true, temporary storage used for intermediate steps in
 multiplication and division will be allocated.
 
 !!! warning
-    If you'll use the same `W` in multiple threads, you should set `allocatetmp=false`
+    If you'll use the same `W` in multiple threads, you should use `allocatetmp=false`
     or risk data races.
 
 
 See also [SymWoodbury](@ref).
 
 """
-function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix; allocatetmp::Bool=true)
+function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix; allocatetmp::Bool=false)
     @noinline throwdmm1(U, V, A) = throw(DimensionMismatch("Sizes of U ($(size(U))) and/or V ($(size(V))) are inconsistent with A ($(size(A)))"))
     @noinline throwdmm2(k) = throw(DimensionMismatch("C should be $(k)x$(k)"))
 

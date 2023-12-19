@@ -13,7 +13,7 @@ struct SymWoodbury{T,AType,BType,DType,DpType} <: AbstractWoodbury{T}
 end
 
 """
-    W = SymWoodbury(A, B, D; allocatetmp::Bool=true)
+    W = SymWoodbury(A, B, D; allocatetmp::Bool=false)
 
 Represent a matrix of the form `W = A + BDBᵀ`, where `A` and `D` are symmetric.
 Equations `Wx = b` will be solved using the
@@ -28,7 +28,7 @@ or factorization.
 
 See also [Woodbury](@ref), where `allocatetmp` is explained.
 """
-function SymWoodbury(A, B::AbstractVecOrMat, D; allocatetmp::Bool=true)
+function SymWoodbury(A, B::AbstractVecOrMat, D; allocatetmp::Bool=false)
     @noinline throwdmm(B, D, A) = throw(DimensionMismatch("Sizes of B ($(size(B))) and/or D ($(size(D))) are inconsistent with A ($(size(A)))"))
 
     n = size(A, 1)

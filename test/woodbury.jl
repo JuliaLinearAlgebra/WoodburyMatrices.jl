@@ -39,7 +39,7 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     T = Tridiagonal(dl, d, du)
 
     # Matrix for A
-    for W in (Woodbury(T, U, C, V), Woodbury(T, U, C, V; allocatetmp=false))
+    for W in (Woodbury(T, U, C, V), Woodbury(T, U, C, V; allocatetmp=true))
         @test size(W, 1) == n
         @test size(W) == (n, n)
         @test axes(W) === (Base.OneTo(n), Base.OneTo(n))
