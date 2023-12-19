@@ -2,7 +2,7 @@ module WoodburyMatrices
 
 using LinearAlgebra
 import LinearAlgebra: det, logdet, logabsdet, ldiv!, mul!, adjoint, transpose, diag, issymmetric
-import Base: +, *, \, inv, convert, copy, show, similar, axes, size
+import Base: +, *, \, inv, /, convert, copy, show, similar, axes, size
 using SparseArrays
 
 export AbstractWoodbury, Woodbury, SymWoodbury
@@ -123,6 +123,7 @@ function logabsdet(W::AbstractWoodbury)
 end
 
 *(W::AbstractWoodbury, α::Real) = α*W
+/(W::AbstractWoodbury, α::Real) = (1/α)*W
 +(M::AbstractMatrix, W::AbstractWoodbury) = W + M
 
 end

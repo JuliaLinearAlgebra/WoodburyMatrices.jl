@@ -49,6 +49,7 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
         for v = (rand(n, 1), view(rand(n,1), 1:n), view(rand(n,2),1:n,1:2))
             @test (2*W)*v ≈ 2*(W*v)
             @test (W*2)*v ≈ 2*(W*v)
+            @test (W/2)*v ≈ (W*v)/2
             @test (W'W)*v ≈ Matrix(W)*(Matrix(W)*v)
             @test (W*W)*v ≈ Matrix(W)*(Matrix(W)*v)
             @test (W*W')*v ≈ Matrix(W)*(Matrix(W)*v)
