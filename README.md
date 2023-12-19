@@ -2,6 +2,7 @@
 
 [![Build Status](https://github.com/JuliaLinearAlgebra/WoodburyMatrices.jl/workflows/CI/badge.svg)](https://github.com/JuliaLinearAlgebra/WoodburyMatrices.jl/actions?query=workflow%3ACI+branch%3Amaster)
 [![Coverage Status](http://codecov.io/github/JuliaLinearAlgebra/WoodburyMatrices.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaLinearAlgebra/WoodburyMatrices.jl?branch=master)
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 This package provides support for the [Woodbury matrix identity](http://en.wikipedia.org/wiki/Woodbury_matrix_identity) for the Julia programming language.  This is a generalization of the [Sherman-Morrison formula](http://en.wikipedia.org/wiki/Sherman%E2%80%93Morrison_formula). Note that the Woodbury matrix identity is notorious for floating-point roundoff errors, so be prepared for a certain amount of inaccuracy in the result.
 
