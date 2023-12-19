@@ -106,7 +106,7 @@ transpose(W::Woodbury) = Woodbury(transpose(W.A), transpose(W.V), transpose(W.C)
 
 # We'd like to implement `issymmetric` as
 #     issymmetric(W::Woodbury) = issymmetric(W.A) && issymmetric(W.C) && W.U == W.V'
-# but this only represents a quick check in favorable cases, as it is possible for A + UCV'
+# but this only represents a quick check in favorable cases, as it is possible for A + UCV
 # to be symmetric even if the pieces are not.
 # (Example: A + U*C*(-U') = A - U*C*U'.)
 # Thus we have to fall back to the dense implementation.
