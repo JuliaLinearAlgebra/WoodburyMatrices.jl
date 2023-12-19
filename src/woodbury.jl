@@ -67,9 +67,9 @@ Woodbury(A, U::AbstractVector{T}, C, V::AbstractMatrix{T}) where {T} = Woodbury(
 
 # Woodbury(A, U::AbstractVector, C, V::Adjoint) = Woodbury(A, U, C, Matrix(V))
 
-function show(io::IO, W::Woodbury)
+function show(io::IO, mime::MIME"text/plain", W::Woodbury)
     println(io, "Woodbury factorization:\nA:")
-    show(io, MIME("text/plain"), W.A)
+    show(io, mime, W.A)
     print(io, "\nU:\n")
     Base.print_matrix(IOContext(io, :compact=>true), W.U)
     if isa(W.C, Matrix)
@@ -81,6 +81,18 @@ function show(io::IO, W::Woodbury)
     print(io, "\nV:\n")
     Base.print_matrix(IOContext(io, :compact=>true), W.V)
 end
+function show(io::IO, W::Woodbury)
+    print(io, "Woodbury{$(eltype(W))}(A=")
+    show(io, W.A)
+    print(io, ", U=")
+    show(io, W.U)
+    print(io, ", C=")
+    show(io, W.C)
+    print(io, ", V=")
+    show(io, W.V)
+    print(io, ")")
+end
+
 
 copy(W::Woodbury) = Woodbury(W.A, W.U, W.C, W.V)
 

@@ -205,9 +205,13 @@ W1 = SymWoodbury(A, B, D)
 
 # Display
 iob = IOBuffer()
-show(iob, W)
+show(iob, MIME("text/plain"), W)
 str = String(take!(iob))
 @test occursin("D:", str)
+show(iob, W)
+str = String(take!(iob))
+@test occursin("SymWoodbury{Float64}", str)
+@test occursin("D=", str)
 
 # logdet
 # make sure all matrices are PSD because I don't want complex numbers

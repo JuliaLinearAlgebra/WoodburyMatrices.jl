@@ -132,9 +132,13 @@ iFv = F\v
 
 # Display
 iob = IOBuffer()
-show(iob, W)
+show(iob, MIME("text/plain"), W)
 str = String(take!(iob))
 @test occursin("C:", str)
+show(iob, W)
+str = String(take!(iob))
+@test occursin("Woodbury{Float64}", str)
+@test occursin("C=", str)
 
 # Vector-valued U and scalar-valued C
 U = rand(n)
