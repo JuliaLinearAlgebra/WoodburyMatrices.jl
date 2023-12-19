@@ -65,6 +65,8 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
         @test W'*v ≈ F'*v
         @test transpose(W)*v ≈ transpose(F)*v
         @test (W + W) \ v ≈ (2*Matrix(W)) \ v
+        @test (2W) \ v ≈ (W*2) \ v ≈ (2*Matrix(W)) \ v
+        @test (W/2) \ v ≈ (Matrix(W)/2) \ v
         # Test a method used for ambiguity resolution
         if elty<:Union{Float32, Float64}
             R = randn(Complex{elty}, n, 2)
