@@ -9,8 +9,8 @@ struct SymWoodbury{T,AType,BType,DType,DpType} <: AbstractWoodbury{T}
     tmpk1::Union{Vector{T}, Nothing}
     tmpk2::Union{Vector{T}, Nothing}
 
-    SymWoodbury{T}(A, B, D, Dp, tmpN1, tmpN2, tmpk1, tmpk2) where {T} =
-        new{T,typeof(A),typeof(B),typeof(D),typeof(Dp)}(A, B, D, Dp, tmpN1, tmpN2, tmpk1, tmpk2)
+    SymWoodbury{T}(A, B, D, Dp, tmpN1, tmpN2, tmpN3, tmpk1, tmpk2) where {T} =
+        new{T,typeof(A),typeof(B),typeof(D),typeof(Dp)}(A, B, D, Dp, tmpN1, tmpN2, tmpN3, tmpk1, tmpk2)
 end
 
 """
