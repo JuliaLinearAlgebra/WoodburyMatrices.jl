@@ -47,7 +47,7 @@ function SymWoodbury(A, B::AbstractVecOrMat, D;
     Dp = safeinv(safeinv(D) .+ B'*(A\B))
     # temporary space for allocation-free solver (vector RHS only)
     T = typeof(float(zero(eltype(A)) * zero(eltype(B)) * zero(eltype(D))))
-    tmpN1, tmpN2, tmpN3, tmpk1, tmpk2 = _allocate_tmp(T, allocs, allocatetmp, N, k)
+    tmpN1, tmpN2, tmpN3, tmpk1, tmpk2 = _allocate_tmp(T, allocs, allocatetmp, n, k)
 
     SymWoodbury{T}(A, B, D, Dp, tmpN1, tmpN2, tmpN3, tmpk1, tmpk2)
 end
