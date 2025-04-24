@@ -6,15 +6,16 @@ struct Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractWoodbury{T}
     V::VType
     tmpN1::Union{Vector{T}, Nothing}
     tmpN2::Union{Vector{T}, Nothing}
+    tmpN3::Union{Vector{T}, Nothing}
     tmpk1::Union{Vector{T}, Nothing}
     tmpk2::Union{Vector{T}, Nothing}
 
-    Woodbury{T}(A, U, C, Cp, V, tmpN1, tmpN2, tmpk1, tmpk2) where {T} =
-        new{T,typeof(A),typeof(U),typeof(V),typeof(C),typeof(Cp)}(A, U, C, Cp, V, tmpN1, tmpN2, tmpk1, tmpk2)
+    Woodbury{T}(A, U, C, Cp, V, tmpN1, tmpN2, tmpN3, tmpk1, tmpk2) where {T} =
+        new{T,typeof(A),typeof(U),typeof(V),typeof(C),typeof(Cp)}(A, U, C, Cp, V, tmpN1, tmpN2, tmpN3, tmpk1, tmpk2)
 end
 
 """
-    W = Woodbury(A, U, C, V; allocatetmp::Bool=false)
+    W = Woodbury(A, U, C, V; allocatetmp::Bool=false, allocs=nothing)
 
 Represent a matrix `W = A + UCV`.
 Equations `Wx = b` will be solved using the
@@ -24,7 +25,9 @@ If your main goal is to solve equations, it's often advantageous to supply
 `A` as a factorization (e.g., `Woodbury(lu(A), U, C, V)`).
 
 If `allocatetmp` is true, temporary storage used for intermediate steps in
-multiplication and division will be allocated.
+multiplication and division will be allocated. `allocs` can also be supplied
+as a keyword. These must be some iterator with three vectors of length `N`,
+and two of length `k`
 
 !!! warning
     If you'll use the same `W` in multiple threads, you should use `allocatetmp=false`
@@ -34,7 +37,10 @@ multiplication and division will be allocated.
 See also [SymWoodbury](@ref).
 
 """
-function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix; allocatetmp::Bool=false)
+function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix; 
+    allocatetmp::Bool=false,
+    allocs=nothing,
+)
     @noinline throwdmm1(U, V, A) = throw(DimensionMismatch("Sizes of U ($(size(U))) and/or V ($(size(V))) are inconsistent with A ($(size(A)))"))
     @noinline throwdmm2(k) = throw(DimensionMismatch("C should be $(k)x$(k)"))
 
@@ -51,16 +57,9 @@ function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix; allocatetmp::Bool=
     Cp = safeinv(safeinv(C) .+ V*(A\U))
     # temporary space for allocation-free solver (vector RHS only)
     T = typeof(float(zero(eltype(A)) * zero(eltype(U)) * zero(eltype(C)) * zero(eltype(V))))
-    if allocatetmp
-        tmpN1 = Vector{T}(undef, N)
-        tmpN2 = Vector{T}(undef, N)
-        tmpk1 = Vector{T}(undef, k)
-        tmpk2 = Vector{T}(undef, k)
-    else
-        tmpN1 = tmpN2 = tmpk1 = tmpk2 = nothing
-    end
+    tmpN1, tmpN2, tmpN3, tmpk1, tmpk2 = _allocate_tmp(T, allocs, allocatetmp, N, k)
 
-    Woodbury{T}(A, U, C, Cp, V, tmpN1, tmpN2, tmpk1, tmpk2)
+    Woodbury{T}(A, U, C, Cp, V, tmpN1, tmpN2, tmpN3, tmpk1, tmpk2)
 end
 
 Woodbury(A, U::AbstractVector{T}, C, V::AbstractMatrix{T}) where {T} = Woodbury(A, reshape(U, length(U), 1), C, V)
@@ -126,4 +125,22 @@ transpose(W::Woodbury) = Woodbury(transpose(W.A), transpose(W.V), transpose(W.C)
 function issymmetric(W::Woodbury)
     issymmetric(W.A) && issymmetric(W.C) && W.U == W.V' && return true
     return issymmetric(Matrix(W))
+end
+
+@inline function _allocate_tmp(::Type{T}, allocs, allocatetmp, N, k) where T
+    if !isnothing(allocs)
+        # Check there are five allocs and they match N and k
+        length(allocs) == 5 || throw(ArgumentError("Must have 5 allocs, got $(length(allocs))"))
+        length(allocs[1]) == length(allocs[2]) == length(allocs[3]) == N || throw(ArgumentError("First three allocs must have length $N"))
+        length(allocs[4]) == length(allocs[5]) == k || throw(ArgumentError("Last two allocs must have length $k"))
+        foreach(allocs) do a
+            typeof(a) <: Vector{T} || throw(ArgumentError("All allocs must have type Vector{$T}, got $(typeof(a))"))
+        end
+        allocs
+    elseif allocatetmp
+        V = Vector{T}
+        V(undef, N), V(undef, N), V(undef, N), V(undef, k), V(undef, k)
+    else
+        nothing, nothing, nothing, nothing, nothing
+    end
 end

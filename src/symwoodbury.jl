@@ -5,6 +5,7 @@ struct SymWoodbury{T,AType,BType,DType,DpType} <: AbstractWoodbury{T}
     Dp::DpType
     tmpN1::Union{Vector{T}, Nothing}
     tmpN2::Union{Vector{T}, Nothing}
+    tmpN3::Union{Vector{T}, Nothing}
     tmpk1::Union{Vector{T}, Nothing}
     tmpk2::Union{Vector{T}, Nothing}
 
@@ -28,7 +29,10 @@ or factorization.
 
 See also [Woodbury](@ref), where `allocatetmp` is explained.
 """
-function SymWoodbury(A, B::AbstractVecOrMat, D; allocatetmp::Bool=false)
+function SymWoodbury(A, B::AbstractVecOrMat, D; 
+    allocatetmp::Bool=false,
+    allocs=nothing,
+)
     @noinline throwdmm(B, D, A) = throw(DimensionMismatch("Sizes of B ($(size(B))) and/or D ($(size(D))) are inconsistent with A ($(size(A)))"))
 
     n = size(A, 1)
@@ -43,16 +47,9 @@ function SymWoodbury(A, B::AbstractVecOrMat, D; allocatetmp::Bool=false)
     Dp = safeinv(safeinv(D) .+ B'*(A\B))
     # temporary space for allocation-free solver (vector RHS only)
     T = typeof(float(zero(eltype(A)) * zero(eltype(B)) * zero(eltype(D))))
-    if allocatetmp
-        tmpN1 = Vector{T}(undef, n)
-        tmpN2 = Vector{T}(undef, n)
-        tmpk1 = Vector{T}(undef, k)
-        tmpk2 = Vector{T}(undef, k)
-    else
-        tmpN1 = tmpN2 = tmpk1 = tmpk2 = nothing
-    end
+    tmpN1, tmpN2, tmpN3, tmpk1, tmpk2 = _allocate_tmp(T, allocs, allocatetmp, N, k)
 
-    SymWoodbury{T}(A, B, D, Dp, tmpN1, tmpN2, tmpk1, tmpk2)
+    SymWoodbury{T}(A, B, D, Dp, tmpN1, tmpN2, tmpN3, tmpk1, tmpk2)
 end
 
 convert(::Type{W}, O::SymWoodbury) where {W<:Woodbury} = Woodbury(O.A, O.B, O.D, O.B')
