@@ -38,8 +38,16 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     ε = eps(abs2(float(one(elty))))
     T = Tridiagonal(dl, d, du)
 
+    n = size(T, 1)
+    k = size(U, 2)
+    tmp_elty = typeof(float(zero(eltype(T)) * zero(eltype(U)) * zero(eltype(C)) * zero(eltype(V))))
+    allocs = [(Vector{tmp_elty}(undef, n) for i in 1:3)..., (Vector{tmp_elty}(undef, k) for i in 1:2)...]
     # Matrix for A
-    for W in (Woodbury(T, U, C, V), Woodbury(T, U, C, V; allocatetmp=true))
+    for W in (
+        Woodbury(T, U, C, V), 
+        Woodbury(T, U, C, V; allocatetmp=true),
+        Woodbury(T, U, C, V; allocs),
+    )
         @test size(W, 1) == n
         @test size(W) == (n, n)
         @test axes(W) === (Base.OneTo(n), Base.OneTo(n))

@@ -88,7 +88,8 @@ function _ldiv!(dest, W::AbstractWoodbury, A::Union{Factorization,Diagonal}, B)
         mul!(W.tmpk1, W.V, W.tmpN1)
         mul!(W.tmpk2, W.Cp, W.tmpk1)
         mul!(W.tmpN2, W.U, W.tmpk2)
-        ldiv!(A, W.tmpN2)
+        W.tmpN3 .= W.tmpN2
+        ldiv!(W.tmpN2, A, W.tmpN3)
         for i in eachindex(W.tmpN2)
             dest[i] = W.tmpN1[i] - W.tmpN2[i]
         end

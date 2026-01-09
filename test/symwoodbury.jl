@@ -26,8 +26,18 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
     ε = eps(abs2(float(one(elty))))
     A = Diagonal(a)
 
-    for W in (SymWoodbury(A, B, D), SymWoodbury(A, B, D; allocatetmp=true), SymWoodbury(A, B[:,1][:], 2.), SymWoodbury(A, B, D; use_pinv=true))
+    n = size(A, 1)
+    k = size(B, 1)
+    tmp_elty = typeof(float(zero(eltype(A)) * zero(eltype(B)) * zero(eltype(D))))
+    allocs = [(Vector{tmp_elty}(undef, n) for i in 1:3)..., (Vector{tmp_elty}(undef, k) for i in 1:2)...]
 
+    for W in (
+        SymWoodbury(A, B, D), 
+        SymWoodbury(A, B, D; allocatetmp=true), 
+        SymWoodbury(A, B, D; allocs), 
+        SymWoodbury(A, B[:,1][:], 2.),
+        SymWoodbury(A, B, D; use_pinv=true),
+    )
         @test issymmetric(W)
         F = Matrix(W)
         @test (2*W)*v ≈ 2*(W*v)
