@@ -12,6 +12,9 @@ abstract type AbstractWoodbury{T} <: Factorization{T} end
 safeinv(A) = inv(A)
 safeinv(A::SparseMatrixCSC) = safeinv(Matrix(A))
 
+safepinv(A) = pinv(A)
+safepinv(A::SparseMatrixCSC) = safepinv(Matrix(A))
+
 include("woodbury.jl")
 include("symwoodbury.jl")
 include("sparsefactors.jl")

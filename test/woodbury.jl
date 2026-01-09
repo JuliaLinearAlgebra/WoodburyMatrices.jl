@@ -210,4 +210,24 @@ W = Woodbury([randpsd(50) for _ in 1:4]...)
     @test all(logabsdet(W) .≈ logabsdet(Matrix(W)))
 end
 
+@testset "pinv" begin
+    # Build a matrix W that is equivalent to
+    #   A = [Diagonal(c) ones(length(c))]
+    #   A'A
+    # This is rank-deficient, so inv should fail but pinv should work
+    c = [-1.0, -2.0, -3.0, -4.0]
+    d = c.^2
+    push!(d, length(c))
+    U = [c zeros(length(c)); 0 1]
+    @test_throws SingularException Woodbury(Diagonal(d), U, [0 1; 1 0], U')
+    W = Woodbury(Diagonal(d), U, [0 1; 1 0], U'; use_pinv=true)
+    b = randn(length(c)+1)
+    # Project out the component along the singular direction
+    E = eigen(Matrix(W); sortby=+)
+    bproj = b - (E.vectors[:,begin]'*b)*E.vectors[:,begin]
+    x = W \ bproj
+    @test norm(W*x - bproj) ≤ 1e-10
+end
+
+
 end  # @testset "Woodbury"

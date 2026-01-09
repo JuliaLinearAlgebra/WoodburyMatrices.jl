@@ -36,8 +36,8 @@ for elty in (Float32, Float64, ComplexF32, ComplexF64, Int)
         SymWoodbury(A, B, D; allocatetmp=true), 
         SymWoodbury(A, B, D; allocs), 
         SymWoodbury(A, B[:,1][:], 2.),
+        SymWoodbury(A, B, D; use_pinv=true),
     )
-
         @test issymmetric(W)
         F = Matrix(W)
         @test (2*W)*v ≈ 2*(W*v)
@@ -141,48 +141,48 @@ end
 A = Diagonal((rand(n)))
 B = sprandn(n,2,1.)
 D = sprandn(2,2,1.); D = (D + D')/2
-W = SymWoodbury(A, B, D)
-v = randn(n)
-vdiag = Diagonal(v)
-V = randn(n,1)
+for W in (SymWoodbury(A, B, D), SymWoodbury(A, B, D; use_pinv=true))
+    v = randn(n)
+    vdiag = Diagonal(v)
+    V = randn(n,1)
+    @test size(W) == (n,n)
+    @test size(W,1) == n
+    @test size(W,2) == n
 
-@test size(W) == (n,n)
-@test size(W,1) == n
-@test size(W,2) == n
+    @test inv(W)*v ≈ inv(Matrix(W))*v
+    @test (2*W)*v ≈ 2*(W*v)
+    @test (W'W)*v ≈ Matrix(W)*(Matrix(W)*v)
+    @test (W*W)*v ≈ Matrix(W)*(Matrix(W)*v)
+    @test (W*W')*v ≈ Matrix(W)*(Matrix(W)*v)
 
-@test inv(W)*v ≈ inv(Matrix(W))*v
-@test (2*W)*v ≈ 2*(W*v)
-@test (W'W)*v ≈ Matrix(W)*(Matrix(W)*v)
-@test (W*W)*v ≈ Matrix(W)*(Matrix(W)*v)
-@test (W*W')*v ≈ Matrix(W)*(Matrix(W)*v)
+    @test inv(W)*vdiag ≈ W\vdiag
+    @test W\vdiag ≈ W\Matrix(vdiag)
+    @test inv(W)*vdiag ≈ inv(Matrix(W))*vdiag
 
-@test inv(W)*vdiag ≈ W\vdiag
-@test W\vdiag ≈ W\Matrix(vdiag)
-@test inv(W)*vdiag ≈ inv(Matrix(W))*vdiag
+    @test inv(W)*V ≈ inv(Matrix(W))*V
+    @test (2*W)*V ≈ 2*(W*V)
+    @test (W'W)*V ≈ Matrix(W)*(Matrix(W)*V)
+    @test (W*W)*V ≈ Matrix(W)*(Matrix(W)*V)
+    @test (W*W')*V ≈ Matrix(W)*(Matrix(W)*V)
 
-@test inv(W)*V ≈ inv(Matrix(W))*V
-@test (2*W)*V ≈ 2*(W*V)
-@test (W'W)*V ≈ Matrix(W)*(Matrix(W)*V)
-@test (W*W)*V ≈ Matrix(W)*(Matrix(W)*V)
-@test (W*W')*V ≈ Matrix(W)*(Matrix(W)*V)
+    @test Matrix(2*W) ≈ 2*Matrix(W)
+    @test Matrix(W*2) ≈ 2*Matrix(W)
+    R = Symmetric(rand(size(W)...))
+    # Not sure when this got fixed, but check that failures are for a "known" reason
+    canadd = try (W + R; true;) catch err; (@test err isa MethodError && err.f == ldiv!; false;) end
+    if canadd
+        @test Matrix(W + R) ≈ Matrix(W) + R
+        @test Matrix(R + W) ≈ Matrix(W) + R
+    else
+        @test_broken Matrix(W + R) ≈ Matrix(W) + R
+        @test_broken Matrix(R + W) ≈ Matrix(W) + R
+    end
+    Wm = SymWoodbury(A, Matrix(B), D)
+    @test Matrix(Wm + R) ≈ Matrix(Wm) + R
+    @test Matrix(R + Wm) ≈ Matrix(Wm) + R
 
-@test Matrix(2*W) ≈ 2*Matrix(W)
-@test Matrix(W*2) ≈ 2*Matrix(W)
-R = Symmetric(rand(size(W)...))
-# Not sure when this got fixed, but check that failures are for a "known" reason
-canadd = try (W + R; true;) catch err; (@test err isa MethodError && err.f == ldiv!; false;) end
-if canadd
-    @test Matrix(W + R) ≈ Matrix(W) + R
-    @test Matrix(R + W) ≈ Matrix(W) + R
-else
-    @test_broken Matrix(W + R) ≈ Matrix(W) + R
-    @test_broken Matrix(R + W) ≈ Matrix(W) + R
+    @test transpose(W)*v ≈ transpose(Matrix(W))*v
 end
-Wm = SymWoodbury(A, Matrix(B), D)
-@test Matrix(Wm + R) ≈ Matrix(Wm) + R
-@test Matrix(R + Wm) ≈ Matrix(Wm) + R
-
-@test transpose(W)*v ≈ transpose(Matrix(W))*v
 
 # Factorization for A
 A = SymTridiagonal(rand(5).+2, rand(4))
@@ -215,6 +215,7 @@ W1 = SymWoodbury(A, B, D)
 @test_throws ArgumentError SymWoodbury(rand(5,5),rand(5,2),rand(2,2))
 
 # Display
+W = SymWoodbury(A, B, D)
 iob = IOBuffer()
 show(iob, MIME("text/plain"), W)
 str = String(take!(iob))
@@ -251,6 +252,25 @@ end
     @test det(W) ≈ det(Matrix(W))
     @test logdet(W) ≈ logdet(Matrix(W))
     @test all(logabsdet(W) .≈ logabsdet(Matrix(W)))
+end
+
+@testset "pinv" begin
+    # Build a matrix W that is equivalent to
+    #   A = [Diagonal(c) ones(length(c))]
+    #   A'A
+    # This is rank-deficient, so inv should fail but pinv should work
+    c = [-1.0, -2.0, -3.0, -4.0]
+    d = c.^2
+    push!(d, length(c))
+    U = [c zeros(length(c)); 0 1]
+    @test_throws SingularException SymWoodbury(Diagonal(d), U, [0 1; 1 0])
+    W = SymWoodbury(Diagonal(d), U, [0 1; 1 0]; use_pinv=true)
+    b = randn(length(c)+1)
+    # Project out the component along the singular direction
+    E = eigen(Matrix(W); sortby=+)
+    bproj = b - (E.vectors[:,begin]'*b)*E.vectors[:,begin]
+    x = W \ bproj
+    @test norm(W*x - bproj) ≤ 1e-10
 end
 
 end # @testset "SymWoodbury"

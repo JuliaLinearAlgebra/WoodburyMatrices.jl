@@ -15,7 +15,7 @@ struct Woodbury{T,AType,UType,VType,CType,CpType} <: AbstractWoodbury{T}
 end
 
 """
-    W = Woodbury(A, U, C, V; allocatetmp::Bool=false, allocs=nothing)
+    W = Woodbury(A, U, C, V; allocatetmp::Bool=false, use_pinv::Bool=false, allocs=nothing)
 
 Represent a matrix `W = A + UCV`.
 Equations `Wx = b` will be solved using the
@@ -23,6 +23,9 @@ Equations `Wx = b` will be solved using the
 
 If your main goal is to solve equations, it's often advantageous to supply
 `A` as a factorization (e.g., `Woodbury(lu(A), U, C, V)`).
+
+If `W` is rank-deficient or nearly so, setting `use_pinv` to true will use
+the pseudoinverse in the Woodbury formula to improve numerical stability.
 
 If `allocatetmp` is true, temporary storage used for intermediate steps in
 multiplication and division will be allocated. `allocs` can also be supplied
@@ -33,12 +36,12 @@ and two of length `k`
     If you'll use the same `W` in multiple threads, you should use `allocatetmp=false`
     or risk data races.
 
-
 See also [SymWoodbury](@ref).
 
 """
 function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix; 
     allocatetmp::Bool=false,
+    use_pinv::Bool=false,
     allocs=nothing,
 )
     @noinline throwdmm1(U, V, A) = throw(DimensionMismatch("Sizes of U ($(size(U))) and/or V ($(size(V))) are inconsistent with A ($(size(A)))"))
@@ -54,7 +57,8 @@ function Woodbury(A, U::AbstractMatrix, C, V::AbstractMatrix;
             throwdmm2(k)
         end
     end
-    Cp = safeinv(safeinv(C) .+ V*(A\U))
+    Cpinv = safeinv(C) .+ V*(A\U)
+    Cp = use_pinv ? safepinv(Cpinv) : safeinv(Cpinv)
     # temporary space for allocation-free solver (vector RHS only)
     T = typeof(float(zero(eltype(A)) * zero(eltype(U)) * zero(eltype(C)) * zero(eltype(V))))
     tmpN1, tmpN2, tmpN3, tmpk1, tmpk2 = _allocate_tmp(T, allocs, allocatetmp, N, k)
