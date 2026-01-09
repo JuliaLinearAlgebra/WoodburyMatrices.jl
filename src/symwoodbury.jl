@@ -13,7 +13,7 @@ struct SymWoodbury{T,AType,BType,DType,DpType} <: AbstractWoodbury{T}
 end
 
 """
-    W = SymWoodbury(A, B, D; allocatetmp::Bool=false)
+    W = SymWoodbury(A, B, D; allocatetmp::Bool=false, use_pinv::Bool=false)
 
 Represent a matrix of the form `W = A + BDBᵀ`, where `A` and `D` are symmetric.
 Equations `Wx = b` will be solved using the
@@ -26,9 +26,9 @@ semidefinite matrix).
 This checks that `A` is symmetric; you can elide the check by passing a `Symmetric` matrix
 or factorization.
 
-See also [Woodbury](@ref), where `allocatetmp` is explained.
+See also [Woodbury](@ref), where `allocatetmp` and `use_pinv` are explained.
 """
-function SymWoodbury(A, B::AbstractVecOrMat, D; allocatetmp::Bool=false)
+function SymWoodbury(A, B::AbstractVecOrMat, D; allocatetmp::Bool=false, use_pinv::Bool=false)
     @noinline throwdmm(B, D, A) = throw(DimensionMismatch("Sizes of B ($(size(B))) and/or D ($(size(D))) are inconsistent with A ($(size(A)))"))
 
     n = size(A, 1)
@@ -40,7 +40,8 @@ function SymWoodbury(A, B::AbstractVecOrMat, D; allocatetmp::Bool=false)
         issymmetric(A) || throw(ArgumentError("A must be symmetric"))
     end
     issymmetric(D) || throw(ArgumentError("D must be symmetric"))
-    Dp = safeinv(safeinv(D) .+ B'*(A\B))
+    Dpinv = safeinv(D) .+ B'*(A\B)
+    Dp = use_pinv ? safepinv(Dpinv) : safeinv(Dpinv)
     # temporary space for allocation-free solver (vector RHS only)
     T = typeof(float(zero(eltype(A)) * zero(eltype(B)) * zero(eltype(D))))
     if allocatetmp

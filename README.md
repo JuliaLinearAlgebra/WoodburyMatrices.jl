@@ -41,3 +41,9 @@ If passed the keyword argument `allocatetmp=true`, (Sym)Woodbury allocates inter
 This eliminates memory allocation for these common operations.
 
 However, using the same `W` across multiple threads can lead to race conditions. Hence, this optimization is opt-in and should only be used if you know it is safe.
+
+## Rank-deficiency
+
+While `A` is required to be invertible, rank-deficient `W` are supported if you supply the `use_pinv=true` keyword argument to the constructor,
+so that we compute `pinv(inv(C) + V*(A\U))` instead of the standard inverse.
+Then `x = W \ b` will effectively use the pseudo-inverse of `W`.
