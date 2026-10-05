@@ -222,4 +222,26 @@ end
 end
 
 
+
+@testset "safeinv on tiny capacitance matrices" begin
+    seed!(4711)
+    for T in (Float32, Float64, ComplexF32, ComplexF64), n in (1, 2, 3, 4)
+        A = rand(T, n, n) + n * I
+        @test WoodburyMatrices.safeinv(A) ≈ inv(A)
+        @test WoodburyMatrices.safeinv(A) * A ≈ Matrix{T}(I, n, n)
+        @test eltype(WoodburyMatrices.safeinv(A)) === T
+    end
+    # The determinant survives cancellation, against an exact reference: this
+    # matrix rounds `a*d - b*c` to zero in Float64.
+    cancelling = [1.0 1.0 + 2.0^-52; 1.0 - 2.0^-52 1.0]
+    @test WoodburyMatrices.safeinv(cancelling) ≈
+        Float64.(inv(big.(cancelling))) rtol = 1e-8
+    # A singular argument still reports itself as singular rather than returning
+    # infinities.
+    @test_throws SingularException WoodburyMatrices.safeinv(zeros(1, 1))
+    @test_throws SingularException WoodburyMatrices.safeinv([1.0 2.0; 2.0 4.0])
+    # Non-square input is a dimension error at every size.
+    @test_throws DimensionMismatch WoodburyMatrices.safeinv(rand(2, 3))
+end
+
 end  # @testset "Woodbury"
